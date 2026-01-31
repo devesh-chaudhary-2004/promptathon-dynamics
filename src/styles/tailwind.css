@@ -1,0 +1,74 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+/* SkillX Theme - Global Color Overrides */
+@layer utilities {
+  /* Replace purple with teal */
+  .from-purple-400 { --tw-gradient-from: #2dd4bf !important; }
+  .from-purple-500 { --tw-gradient-from: #14b8a6 !important; }
+  .from-purple-600 { --tw-gradient-from: #0d9488 !important; }
+  .to-purple-500 { --tw-gradient-to: #14b8a6 !important; }
+  .to-purple-600 { --tw-gradient-to: #0d9488 !important; }
+  
+  /* Replace pink with teal-light */
+  .from-pink-400 { --tw-gradient-from: #5eead4 !important; }
+  .from-pink-500 { --tw-gradient-from: #2dd4bf !important; }
+  .from-pink-600 { --tw-gradient-from: #14b8a6 !important; }
+  .to-pink-400 { --tw-gradient-to: #5eead4 !important; }
+  .to-pink-500 { --tw-gradient-to: #2dd4bf !important; }
+  .to-pink-600 { --tw-gradient-to: #14b8a6 !important; }
+  
+  /* Background colors */
+  .bg-purple-500 { background-color: #14b8a6 !important; }
+  .bg-purple-600 { background-color: #0d9488 !important; }
+  .bg-purple-400 { background-color: #2dd4bf !important; }
+  .bg-pink-500 { background-color: #2dd4bf !important; }
+  .bg-pink-600 { background-color: #14b8a6 !important; }
+  .bg-pink-400 { background-color: #5eead4 !important; }
+  
+  /* Text colors */
+  .text-purple-300 { color: #5eead4 !important; }
+  .text-purple-400 { color: #2dd4bf !important; }
+  .text-purple-500 { color: #14b8a6 !important; }
+  .text-pink-300 { color: #5eead4 !important; }
+  .text-pink-400 { color: #2dd4bf !important; }
+  .text-pink-500 { color: #14b8a6 !important; }
+  
+  /* Border colors */
+  .border-purple-500 { border-color: #14b8a6 !important; }
+  .border-purple-500\/30 { border-color: rgba(20, 184, 166, 0.3) !important; }
+  .border-purple-500\/50 { border-color: rgba(20, 184, 166, 0.5) !important; }
+  .border-pink-500 { border-color: #2dd4bf !important; }
+  .border-pink-500\/30 { border-color: rgba(45, 212, 191, 0.3) !important; }
+  .border-pink-500\/50 { border-color: rgba(45, 212, 191, 0.5) !important; }
+  
+  /* Background with opacity */
+  .bg-purple-500\/10 { background-color: rgba(20, 184, 166, 0.1) !important; }
+  .bg-purple-500\/20 { background-color: rgba(20, 184, 166, 0.2) !important; }
+  .bg-purple-500\/30 { background-color: rgba(20, 184, 166, 0.3) !important; }
+  .bg-pink-500\/10 { background-color: rgba(45, 212, 191, 0.1) !important; }
+  .bg-pink-500\/20 { background-color: rgba(45, 212, 191, 0.2) !important; }
+  .bg-pink-500\/30 { background-color: rgba(45, 212, 191, 0.3) !important; }
+  
+  /* Ring colors */
+  .ring-purple-500 { --tw-ring-color: #14b8a6 !important; }
+  .ring-purple-500\/30 { --tw-ring-color: rgba(20, 184, 166, 0.3) !important; }
+  .ring-purple-500\/50 { --tw-ring-color: rgba(20, 184, 166, 0.5) !important; }
+  
+  /* Hover states */
+  .hover\:bg-purple-600:hover { background-color: #0d9488 !important; }
+  .hover\:from-purple-600:hover { --tw-gradient-from: #0d9488 !important; }
+  .hover\:to-pink-600:hover { --tw-gradient-to: #14b8a6 !important; }
+  .hover\:text-purple-300:hover { color: #5eead4 !important; }
+  .hover\:text-purple-400:hover { color: #2dd4bf !important; }
+  .hover\:border-purple-500\/50:hover { border-color: rgba(20, 184, 166, 0.5) !important; }
+  
+  /* Dark background overrides */
+  .bg-slate-950 { background-color: #050505 !important; }
+  .bg-slate-950\/80 { background-color: rgba(5, 5, 5, 0.8) !important; }
+  .bg-slate-950\/90 { background-color: rgba(5, 5, 5, 0.9) !important; }
+  .bg-slate-900 { background-color: #0c0c0c !important; }
+  .bg-slate-900\/95 { background-color: rgba(12, 12, 12, 0.95) !important; }
+}
