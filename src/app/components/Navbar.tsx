@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "@/app/components/ui/button";
 import { 
   GraduationCap, 
@@ -47,6 +47,8 @@ import {
 } from "@/app/components/ui/navigation-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const categories = [
   { name: "Development", icon: Code, color: "from-teal-500 to-cyan-500", count: "2.5K+" },
@@ -59,12 +61,19 @@ const categories = [
 
 export function Navbar() {
   const location = useLocation();
-  const isLoggedIn = false; // Set to false - user needs to login
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const userCredits = 2450;
+  const userCredits = user?.credits || 0;
   const unreadMessages = 3;
   const notifications = 5;
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    navigate("/");
+  };
 
   return (
     <motion.nav
@@ -144,7 +153,7 @@ export function Navbar() {
             Workshops
           </NavLink>
           
-          {isLoggedIn && (
+          {isAuthenticated && (
             <>
               <NavLink to="/dashboard" icon={LayoutDashboard}>
                 Dashboard
@@ -163,7 +172,7 @@ export function Navbar() {
 
         {/* Right Side */}
         <div className="flex items-center gap-2">
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <>
               {/* Credits Badge */}
               <motion.div
@@ -201,9 +210,9 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-9 w-9 ring-2 ring-teal-500/50">
-                      <AvatarImage src="" alt="User" />
+                      <AvatarImage src={user?.avatar || ''} alt={user?.name || 'User'} />
                       <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white font-heading font-semibold">
-                        JD
+                        {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -212,15 +221,16 @@ export function Navbar() {
                   <div className="p-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
+                        <AvatarImage src={user?.avatar || ''} alt={user?.name || 'User'} />
                         <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-lg font-heading font-semibold">
-                          JD
+                          {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-white">John Doe</p>
+                        <p className="font-semibold text-white">{user?.name || 'User'}</p>
                         <div className="flex items-center gap-1">
                           <Crown className="h-3 w-3 text-yellow-400" />
-                          <span className="text-xs text-yellow-400">Pro User</span>
+                          <span className="text-xs text-yellow-400">{user?.role === 'admin' ? 'Admin' : 'Member'}</span>
                         </div>
                       </div>
                     </div>
@@ -237,7 +247,7 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer">
-                    <Link to="/profile/1" className="flex items-center">
+                    <Link to={`/profile/${user?._id || user?.id || 'me'}`} className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
                       View Profile
                     </Link>
@@ -268,7 +278,7 @@ export function Navbar() {
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-white/10 focus:text-red-400 text-red-400 cursor-pointer">
+                  <DropdownMenuItem onClick={handleLogout} className="focus:bg-white/10 focus:text-red-400 text-red-400 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -324,7 +334,7 @@ export function Navbar() {
               <MobileNavLink to="/workshops" icon={Video} onClick={() => setMobileMenuOpen(false)}>
                 Workshops
               </MobileNavLink>
-              {isLoggedIn && (
+              {isAuthenticated && (
                 <>
                   <MobileNavLink to="/dashboard" icon={LayoutDashboard} onClick={() => setMobileMenuOpen(false)}>
                     Dashboard

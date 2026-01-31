@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   { icon: Zap, text: "Trade skills, earn credits", color: "text-teal-400" },
@@ -37,6 +38,7 @@ const testimonial = {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -45,18 +47,32 @@ export function LoginPage() {
     password: "",
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success("Welcome back to SkillX!", {
-      description: "You've been successfully logged in.",
-    });
-    setIsLoading(false);
-    navigate("/dashboard");
+    try {
+      const user = await login(formData.email, formData.password, rememberMe);
+      console.log("Login successful, user:", user);
+      toast.success("Welcome back to SkillX!", {
+        description: "You've been successfully logged in.",
+      });
+      // Navigate immediately after successful login
+      window.location.href = "/dashboard";
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Login failed", {
+        description: error.message || "Please check your credentials and try again.",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +87,15 @@ export function LoginPage() {
       description: "We're working on social login integration.",
     });
   };
+  
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

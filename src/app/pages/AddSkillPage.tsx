@@ -6,9 +6,7 @@ import { Textarea } from "@/app/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
 import { Switch } from "@/app/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/app/components/ui/radio-group";
 import { Badge } from "@/app/components/ui/badge";
-import { Checkbox } from "@/app/components/ui/checkbox";
 import { 
   Plus, 
   X, 
@@ -18,43 +16,46 @@ import {
   Calendar,
   DollarSign,
   Users,
-  Video,
   MapPin,
   Tag,
   FileText,
-  Link as LinkIcon,
   CheckCircle,
   Info,
   Zap,
   Star,
   Globe,
   Target,
-  Briefcase
+  Briefcase,
+  Loader2,
+  ArrowLeft,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
+import { skillsAPI } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categories = [
-  { value: "development", label: "Development", icon: "💻" },
-  { value: "design", label: "Art & Design", icon: "🎨" },
-  { value: "music", label: "Music", icon: "🎵" },
-  { value: "writing", label: "Writing", icon: "✍️" },
-  { value: "science", label: "Science", icon: "🔬" },
-  { value: "dsa", label: "DSA", icon: "📊" },
-  { value: "deployment", label: "Deployment", icon: "🚀" },
-  { value: "marketing", label: "Marketing", icon: "📈" },
-  { value: "business", label: "Business", icon: "💼" },
-  { value: "languages", label: "Languages", icon: "🌐" },
-  { value: "ai-ml", label: "AI & ML", icon: "🤖" },
-  { value: "other", label: "Other", icon: "📦" },
+  { value: "Development", label: "Development", icon: "💻" },
+  { value: "Design", label: "Art & Design", icon: "🎨" },
+  { value: "Music", label: "Music", icon: "🎵" },
+  { value: "Writing", label: "Writing", icon: "✍️" },
+  { value: "Science", label: "Science", icon: "🔬" },
+  { value: "DSA", label: "DSA", icon: "📊" },
+  { value: "Deployment", label: "Deployment", icon: "🚀" },
+  { value: "Marketing", label: "Marketing", icon: "📈" },
+  { value: "Business", label: "Business", icon: "💼" },
+  { value: "Languages", label: "Languages", icon: "🌐" },
+  { value: "AI/ML", label: "AI & ML", icon: "🤖" },
+  { value: "Other", label: "Other", icon: "📦" },
 ];
 
 const expertiseLevels = [
-  { value: "beginner", label: "Beginner", description: "Basic understanding, learning stage" },
-  { value: "intermediate", label: "Intermediate", description: "Good working knowledge" },
-  { value: "advanced", label: "Advanced", description: "Deep expertise, can handle complex topics" },
-  { value: "expert", label: "Expert", description: "Industry-level mastery" },
+  { value: "Beginner", label: "Beginner", description: "Basic understanding, learning stage" },
+  { value: "Intermediate", label: "Intermediate", description: "Good working knowledge" },
+  { value: "Advanced", label: "Advanced", description: "Deep expertise, can handle complex topics" },
+  { value: "Expert", label: "Expert", description: "Industry-level mastery" },
 ];
 
 const availabilitySlots = [
@@ -75,6 +76,10 @@ const sessionDurations = [
 ];
 
 export function AddSkillPage() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); // For edit mode
+  const { user, isAuthenticated } = useAuth();
+  
   const [isPremium, setIsPremium] = useState(false);
   const [projects, setProjects] = useState<{ title: string; url: string; description: string }[]>([
     { title: "", url: "", description: "" }
@@ -84,26 +89,142 @@ export function AddSkillPage() {
   const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
   const [prerequisites, setPrerequisites] = useState<string[]>([""]);
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([""]);
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    skillName: "",
+    title: "",
     category: "",
-    expertise: "",
+    level: "",
     description: "",
-    experience: "",
-    mode: "online",
+    fullDescription: "",
+    mode: "Online",
     duration: "60",
     maxStudents: "1",
     price: "",
     skillsWanted: "",
     language: "english",
+    location: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isEditMode = !!id;
+
+  // Fetch skill data if editing
+  useEffect(() => {
+    if (isEditMode) {
+      fetchSkillData();
+    }
+  }, [id]);
+
+  const fetchSkillData = async () => {
+    try {
+      setLoading(true);
+      const response = await skillsAPI.getById(id!);
+      const skill = response.data.skill || response.data;
+      
+      setFormData({
+        title: skill.title || "",
+        category: skill.category || "",
+        level: skill.level || "",
+        description: skill.description || "",
+        fullDescription: skill.fullDescription || "",
+        mode: skill.mode || "Online",
+        duration: skill.duration?.toString() || "60",
+        maxStudents: skill.maxStudents?.toString() || "1",
+        price: skill.price?.toString() || "",
+        skillsWanted: skill.skillsWanted || "",
+        language: skill.language || "english",
+        location: skill.location || "",
+      });
+      
+      setIsPremium(skill.isPremium || false);
+      setTags(skill.tags || []);
+      setProjects(skill.projects?.length > 0 ? skill.projects : [{ title: "", url: "", description: "" }]);
+      setPrerequisites(skill.prerequisites?.length > 0 ? skill.prerequisites : [""]);
+      setLearningOutcomes(skill.learningOutcomes?.length > 0 ? skill.learningOutcomes : [""]);
+      setSelectedAvailability(skill.availability || []);
+    } catch (err: any) {
+      console.error("Error fetching skill:", err);
+      toast.error("Failed to load skill data");
+      navigate("/skills");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
-    toast.success("Skill added successfully! 🎉", {
-      description: "Your skill is now live on the marketplace.",
-    });
+    
+    if (!isAuthenticated) {
+      toast.error("Please login to add a skill");
+      navigate("/login");
+      return;
+    }
+
+    // Validation
+    if (!formData.title.trim()) {
+      toast.error("Please enter a skill name");
+      return;
+    }
+    if (!formData.category) {
+      toast.error("Please select a category");
+      return;
+    }
+    if (!formData.level) {
+      toast.error("Please select an expertise level");
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error("Please enter a description");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const skillData = {
+        title: formData.title.trim(),
+        category: formData.category,
+        level: formData.level,
+        description: formData.description.trim(),
+        fullDescription: formData.fullDescription.trim(),
+        mode: formData.mode,
+        duration: parseInt(formData.duration),
+        maxStudents: parseInt(formData.maxStudents),
+        isPremium,
+        price: isPremium ? parseInt(formData.price) || 0 : 0,
+        skillsWanted: formData.skillsWanted.trim(),
+        language: formData.language,
+        location: formData.location.trim(),
+        tags: tags.filter(t => t.trim()),
+        projects: projects.filter(p => p.title.trim()),
+        prerequisites: prerequisites.filter(p => p.trim()),
+        learningOutcomes: learningOutcomes.filter(o => o.trim()),
+        availability: selectedAvailability,
+        isDraft,
+      };
+
+      if (isEditMode) {
+        await skillsAPI.update(id!, skillData);
+        toast.success("Skill updated successfully! 🎉");
+      } else {
+        await skillsAPI.create(skillData);
+        toast.success(isDraft 
+          ? "Skill saved as draft! 📝" 
+          : "Skill published successfully! 🎉", {
+          description: isDraft 
+            ? "You can edit and publish it later." 
+            : "Your skill is now live on the marketplace.",
+        });
+      }
+      
+      navigate("/skills");
+    } catch (err: any) {
+      console.error("Error saving skill:", err);
+      toast.error(err.response?.data?.message || "Failed to save skill");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -179,13 +300,60 @@ export function AddSkillPage() {
     );
   };
 
+  // Auth check
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+        <Card className="border-white/10 bg-white/5 backdrop-blur-xl max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-teal-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-white mb-2">Sign in required</h2>
+            <p className="text-gray-400 mb-4">
+              You need to be logged in to add a skill.
+            </p>
+            <Button
+              onClick={() => navigate("/login")}
+              className="bg-teal-500 text-white hover:bg-teal-600"
+            >
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen px-4 py-8 relative">
       {/* Background effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full filter blur-[100px]" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full filter blur-[100px]" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full filter blur-[100px]" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[100px]" />
       
       <div className="container mx-auto max-w-5xl relative z-10">
+        {/* Back button */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-6"
+        >
+          <Button
+            onClick={() => navigate(-1)}
+            variant="ghost"
+            className="text-gray-400 hover:text-white hover:bg-white/5"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        </motion.div>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -196,17 +364,19 @@ export function AddSkillPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", delay: 0.2 }}
-            className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25"
+            className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 shadow-lg shadow-teal-500/25"
           >
             <BookOpen className="h-8 w-8 text-white" />
           </motion.div>
-          <h1 className="mb-2 text-4xl font-bold text-white">Add Your Skill</h1>
+          <h1 className="mb-2 text-4xl font-bold text-white font-heading">
+            {isEditMode ? "Edit Your Skill" : "Add Your Skill"}
+          </h1>
           <p className="text-gray-400 max-w-md mx-auto">
             Share your expertise with the community and help others grow
           </p>
         </motion.div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
           {/* Basic Information Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -216,7 +386,7 @@ export function AddSkillPage() {
             <Card className="border-white/10 bg-white/5 backdrop-blur-xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Tag className="h-5 w-5 text-purple-400" />
+                  <Tag className="h-5 w-5 text-teal-400" />
                   Basic Information
                 </CardTitle>
                 <CardDescription className="text-gray-400">
@@ -226,15 +396,15 @@ export function AddSkillPage() {
               <CardContent className="space-y-6">
                 {/* Skill Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="skillName" className="text-gray-300">
+                  <Label htmlFor="title" className="text-gray-300">
                     Skill Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
-                    id="skillName"
-                    name="skillName"
+                    id="title"
+                    name="title"
                     placeholder="e.g., Advanced React Development, Guitar for Beginners"
                     required
-                    value={formData.skillName}
+                    value={formData.title}
                     onChange={handleChange}
                     className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
                   />
@@ -248,12 +418,13 @@ export function AddSkillPage() {
                     </Label>
                     <Select 
                       required
+                      value={formData.category}
                       onValueChange={(value: string) => setFormData(prev => ({ ...prev, category: value }))}
                     >
                       <SelectTrigger className="border-white/10 bg-white/5 text-white">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent className="border-white/10 bg-slate-900 text-white">
+                      <SelectContent className="border-white/10 bg-[#0a0a0a] text-white">
                         {categories.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             <span className="flex items-center gap-2">
@@ -267,17 +438,18 @@ export function AddSkillPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="expertise" className="text-gray-300">
+                    <Label htmlFor="level" className="text-gray-300">
                       Your Expertise Level <span className="text-red-400">*</span>
                     </Label>
                     <Select 
                       required
-                      onValueChange={(value: string) => setFormData(prev => ({ ...prev, expertise: value }))}
+                      value={formData.level}
+                      onValueChange={(value: string) => setFormData(prev => ({ ...prev, level: value }))}
                     >
                       <SelectTrigger className="border-white/10 bg-white/5 text-white">
                         <SelectValue placeholder="Select level" />
                       </SelectTrigger>
-                      <SelectContent className="border-white/10 bg-slate-900 text-white">
+                      <SelectContent className="border-white/10 bg-[#0a0a0a] text-white">
                         {expertiseLevels.map((level) => (
                           <SelectItem key={level.value} value={level.value}>
                             <div>
@@ -294,32 +466,47 @@ export function AddSkillPage() {
                 {/* Description */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-gray-300">
-                    Description <span className="text-red-400">*</span>
+                    Short Description <span className="text-red-400">*</span>
                   </Label>
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Describe what you'll teach, topics covered, your teaching approach, and what makes you qualified..."
-                    rows={5}
+                    placeholder="Brief overview of what you'll teach (shown in skill cards)"
+                    rows={3}
                     required
                     value={formData.description}
+                    onChange={handleChange}
+                    className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
+                  />
+                </div>
+
+                {/* Full Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="fullDescription" className="text-gray-300">
+                    Full Description
+                  </Label>
+                  <Textarea
+                    id="fullDescription"
+                    name="fullDescription"
+                    placeholder="Detailed description: topics covered, teaching approach, what makes you qualified..."
+                    rows={5}
+                    value={formData.fullDescription}
                     onChange={handleChange}
                     className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
                   />
                   <p className="text-xs text-gray-500">Minimum 100 characters recommended</p>
                 </div>
 
-                {/* Experience */}
+                {/* Location */}
                 <div className="space-y-2">
-                  <Label htmlFor="experience" className="text-gray-300">
-                    Your Experience
+                  <Label htmlFor="location" className="text-gray-300">
+                    Location (for offline sessions)
                   </Label>
-                  <Textarea
-                    id="experience"
-                    name="experience"
-                    placeholder="Share your background, years of experience, relevant achievements, certifications..."
-                    rows={3}
-                    value={formData.experience}
+                  <Input
+                    id="location"
+                    name="location"
+                    placeholder="e.g., San Francisco, CA"
+                    value={formData.location}
                     onChange={handleChange}
                     className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
                   />
@@ -350,7 +537,7 @@ export function AddSkillPage() {
                       {tags.map((tag) => (
                         <Badge
                           key={tag}
-                          className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-3 py-1"
+                          className="bg-teal-500/20 text-teal-300 border-teal-500/30 px-3 py-1"
                         >
                           {tag}
                           <button
@@ -564,9 +751,9 @@ export function AddSkillPage() {
                   </Label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: "online", label: "Online", icon: Globe, description: "Video calls" },
-                      { value: "offline", label: "Offline", icon: MapPin, description: "In-person" },
-                      { value: "hybrid", label: "Hybrid", icon: Zap, description: "Both options" },
+                      { value: "Online", label: "Online", icon: Globe, description: "Video calls" },
+                      { value: "Offline", label: "Offline", icon: MapPin, description: "In-person" },
+                      { value: "Hybrid", label: "Hybrid", icon: Zap, description: "Both options" },
                     ].map((mode) => (
                       <button
                         key={mode.value}
@@ -574,7 +761,7 @@ export function AddSkillPage() {
                         onClick={() => setFormData(prev => ({ ...prev, mode: mode.value }))}
                         className={`rounded-xl border p-4 text-center transition-all ${
                           formData.mode === mode.value
-                            ? "border-purple-500 bg-purple-500/20 text-white"
+                            ? "border-teal-500 bg-teal-500/20 text-white"
                             : "border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10"
                         }`}
                       >
@@ -594,13 +781,13 @@ export function AddSkillPage() {
                       Session Duration
                     </Label>
                     <Select 
-                      defaultValue="60"
+                      value={formData.duration}
                       onValueChange={(value: string) => setFormData(prev => ({ ...prev, duration: value }))}
                     >
                       <SelectTrigger className="border-white/10 bg-white/5 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="border-white/10 bg-slate-900 text-white">
+                      <SelectContent className="border-white/10 bg-[#0a0a0a] text-white">
                         {sessionDurations.map((duration) => (
                           <SelectItem key={duration.value} value={duration.value}>
                             {duration.label}
@@ -616,13 +803,13 @@ export function AddSkillPage() {
                       Max Students per Session
                     </Label>
                     <Select 
-                      defaultValue="1"
+                      value={formData.maxStudents}
                       onValueChange={(value: string) => setFormData(prev => ({ ...prev, maxStudents: value }))}
                     >
                       <SelectTrigger className="border-white/10 bg-white/5 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="border-white/10 bg-slate-900 text-white">
+                      <SelectContent className="border-white/10 bg-[#0a0a0a] text-white">
                         <SelectItem value="1">1 (One-on-one)</SelectItem>
                         <SelectItem value="2">2 students</SelectItem>
                         <SelectItem value="3">3 students</SelectItem>
@@ -637,13 +824,13 @@ export function AddSkillPage() {
                 <div className="space-y-2">
                   <Label className="text-gray-300">Teaching Language</Label>
                   <Select 
-                    defaultValue="english"
+                    value={formData.language}
                     onValueChange={(value: string) => setFormData(prev => ({ ...prev, language: value }))}
                   >
                     <SelectTrigger className="border-white/10 bg-white/5 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-white/10 bg-slate-900 text-white">
+                    <SelectContent className="border-white/10 bg-[#0a0a0a] text-white">
                       <SelectItem value="english">English</SelectItem>
                       <SelectItem value="hindi">Hindi</SelectItem>
                       <SelectItem value="spanish">Spanish</SelectItem>
@@ -697,7 +884,7 @@ export function AddSkillPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Premium Toggle */}
-                <div className="space-y-4 rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
+                <div className="space-y-4 rounded-lg border border-teal-500/30 bg-teal-500/10 p-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -793,20 +980,34 @@ export function AddSkillPage() {
             <Button
               type="submit"
               size="lg"
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 h-14 text-lg font-semibold"
+              disabled={submitting}
+              className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 h-14 text-lg font-semibold"
             >
-              <Sparkles className="mr-2 h-5 w-5" />
-              Publish Skill
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  {isEditMode ? "Updating..." : "Publishing..."}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  {isEditMode ? "Update Skill" : "Publish Skill"}
+                </>
+              )}
             </Button>
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="border-white/10 bg-white/5 text-white hover:bg-white/10 h-14"
-            >
-              <FileText className="mr-2 h-5 w-5" />
-              Save as Draft
-            </Button>
+            {!isEditMode && (
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                disabled={submitting}
+                onClick={(e) => handleSubmit(e as any, true)}
+                className="border-white/10 bg-white/5 text-white hover:bg-white/10 h-14"
+              >
+                <FileText className="mr-2 h-5 w-5" />
+                Save as Draft
+              </Button>
+            )}
           </motion.div>
 
           {/* Tips */}

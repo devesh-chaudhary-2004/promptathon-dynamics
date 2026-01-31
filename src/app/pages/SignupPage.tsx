@@ -28,11 +28,13 @@ import {
   X,
   Globe,
   Briefcase,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const skillLevels = ["Beginner", "Intermediate", "Advanced", "Expert"];
 const skillCategories = [
@@ -48,6 +50,17 @@ export function SignupPage() {
   const [newTeachSkill, setNewTeachSkill] = useState("");
   const [newLearnSkill, setNewLearnSkill] = useState("");
   const [otherLinks, setOtherLinks] = useState<string[]>([""]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { signup, isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -72,14 +85,67 @@ export function SignupPage() {
   const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (step < totalSteps) {
+      // Validate step 1 required fields before proceeding
+      if (step === 1) {
+        if (!formData.name || !formData.email || !formData.password || !formData.city) {
+          toast.error("Please fill in all required fields");
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Passwords do not match");
+          return;
+        }
+        if (formData.password.length < 6) {
+          toast.error("Password must be at least 6 characters");
+          return;
+        }
+      }
       setStep(step + 1);
     } else {
-      toast.success("Account created successfully! Please check your email to verify.", {
-        description: "Welcome to SkillX! 🎉",
-      });
+      // Final step - submit to API
+      if (!formData.agreeTerms) {
+        toast.error("Please agree to the terms and conditions");
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const user = await signup({
+          // Required fields
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          city: formData.city,
+          // Optional fields
+          college: formData.college || undefined,
+          year: formData.year || undefined,
+          bio: formData.bio || undefined,
+          github: formData.github || undefined,
+          linkedin: formData.linkedin || undefined,
+          portfolio: formData.portfolio || undefined,
+          leetcode: formData.leetcode || undefined,
+          codeforces: formData.codeforces || undefined,
+          behance: formData.behance || undefined,
+          otherLinks: otherLinks.filter(link => link.trim() !== ''),
+          skillsToTeach: skillsToTeach,
+          skillsToLearn: skillsToLearn,
+        });
+        
+        console.log("Signup successful, user:", user);
+        toast.success("Account created successfully! Please check your email to verify.", {
+          description: "Welcome to SkillX! 🎉",
+        });
+        // Navigate immediately after successful signup
+        window.location.href = "/dashboard";
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to create account. Please try again.";
+        toast.error(errorMessage);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -125,6 +191,15 @@ export function SignupPage() {
   const removeOtherLink = (index: number) => {
     setOtherLinks(otherLinks.filter((_, i) => i !== index));
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12 relative overflow-hidden">
