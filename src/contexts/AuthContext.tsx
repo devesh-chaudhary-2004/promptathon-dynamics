@@ -86,31 +86,41 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  // Initialize state from localStorage immediately
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        return normalizeUser(JSON.parse(storedUser));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('token');
+  });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on mount
+  // Verify token is still valid on mount
   useEffect(() => {
-    const initAuth = async () => {
+    const verifyAuth = async () => {
       const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        const parsedUser = JSON.parse(storedUser);
-        setUser(normalizeUser(parsedUser));
-
+      if (storedToken) {
         // Verify token is still valid
         try {
           const response = await authAPI.getMe();
           if (response.data.success) {
             const normalizedUser = normalizeUser(response.data.user);
             setUser(normalizedUser);
+            setToken(storedToken);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
           }
         } catch (error) {
           // Token invalid, clear auth state
+          console.error('Token verification failed:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setToken(null);
@@ -121,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
     };
 
-    initAuth();
+    verifyAuth();
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false) => {

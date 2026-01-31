@@ -463,7 +463,8 @@ router.get('/user/:userId', async (req, res) => {
 
     res.json({
       success: true,
-      data: skills,
+      skills: skills,
+      data: skills, // For backward compatibility
     });
   } catch (error) {
     console.error('Get user skills error:', error);

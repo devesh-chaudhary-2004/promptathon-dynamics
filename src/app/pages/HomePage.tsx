@@ -251,7 +251,7 @@ export function HomePage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/skills?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/marketplace?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 

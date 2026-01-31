@@ -33,12 +33,16 @@ import {
   RefreshCw,
   ChevronRight,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Pencil,
+  Eye,
+  Trash2
 } from "lucide-react";
 import { Link } from "react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { dashboardAPI, swapsAPI, messagesAPI } from "@/lib/api";
+import { dashboardAPI, swapsAPI, messagesAPI, skillsAPI } from "@/lib/api";
 
 interface DashboardData {
   user: {
@@ -122,6 +126,18 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeReportTab, setActiveReportTab] = useState<"hours" | "credits" | "swaps">("hours");
   const [data, setData] = useState<DashboardData | null>(null);
+  const [mySkills, setMySkills] = useState<Array<{
+    _id: string;
+    title: string;
+    category: string;
+    expertise: string;
+    price: number;
+    isPremium: boolean;
+    isActive: boolean;
+    rating: { average: number; count: number };
+    stats: { views: number; students: number };
+    createdAt: string;
+  }>>([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -131,11 +147,17 @@ export function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [dashboardRes, swapsRes, messagesRes] = await Promise.all([
+      const userId = authUser?._id || authUser?.id;
+      
+      const [dashboardRes, swapsRes, messagesRes, skillsRes] = await Promise.all([
         dashboardAPI.get().catch(() => ({ data: null })),
         swapsAPI.getAll({ status: 'pending' }).catch(() => ({ data: { swaps: [] } })),
         messagesAPI.getConversations({ limit: 3 }).catch(() => ({ data: { conversations: [] } })),
+        userId ? skillsAPI.getByUser(userId).catch(() => ({ data: { skills: [] } })) : Promise.resolve({ data: { skills: [] } }),
       ]);
+
+      // Set user's skills
+      setMySkills(skillsRes.data?.skills || skillsRes.data?.data || []);
 
       // Default data structure if API returns empty
       const defaultUser = {
@@ -598,7 +620,7 @@ export function DashboardPage() {
                       <span>Add Skill</span>
                     </Button>
                   </Link>
-                  <Link to="/skills">
+                  <Link to="/marketplace">
                     <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10">
                       <Users className="h-5 w-5" />
                       <span>Find Skills</span>
@@ -616,6 +638,114 @@ export function DashboardPage() {
                       <span>Messages</span>
                     </Button>
                   </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* My Skills Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <Card className="border-white/10 bg-white/5 backdrop-blur-xl">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-white">My Skills</CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Skills you're teaching ({mySkills.length})
+                      </CardDescription>
+                    </div>
+                    <Link to="/add-skill">
+                      <Button size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add New
+                      </Button>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {mySkills.length > 0 ? (
+                    mySkills.slice(0, 5).map((skill) => (
+                      <motion.div
+                        key={skill._id}
+                        whileHover={{ scale: 1.01 }}
+                        className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all hover:border-teal-500/50"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-semibold text-white">{skill.title}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-white/20 text-gray-400">
+                                {skill.category}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs border-teal-500/30 text-teal-400">
+                                {skill.expertise}
+                              </Badge>
+                              {skill.isPremium && (
+                                <Badge className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                                  <Crown className="mr-1 h-3 w-3" />
+                                  Premium
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            <span className="text-sm text-white">{skill.rating?.average?.toFixed(1) || "5.0"}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {skill.stats?.views || 0} views
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {skill.stats?.students || 0} students
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-teal-400" />
+                            {skill.price || 0} credits
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link to={`/skill/${skill._id}`} className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10">
+                              <Eye className="mr-2 h-4 w-4" />
+                              View
+                            </Button>
+                          </Link>
+                          <Link to={`/edit-skill/${skill._id}`}>
+                            <Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <BookOpen className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400 mb-2">You haven't added any skills yet</p>
+                      <p className="text-sm text-gray-500 mb-4">Share your expertise and start earning credits!</p>
+                      <Link to="/add-skill">
+                        <Button className="bg-gradient-to-r from-teal-500 to-cyan-500">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Your First Skill
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                  {mySkills.length > 5 && (
+                    <Link to={`/profile/${authUser?._id}`}>
+                      <Button variant="outline" className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10">
+                        View All Skills
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
