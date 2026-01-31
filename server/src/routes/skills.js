@@ -90,7 +90,9 @@ router.get('/', optionalAuth, async (req, res) => {
 
     res.json({
       success: true,
-      data: skills,
+      skills: skills,
+      data: skills, // Keep for backward compatibility
+      total,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -191,6 +193,9 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // @access  Private
 router.post('/', authenticate, async (req, res) => {
   try {
+    console.log('Creating skill, request body:', JSON.stringify(req.body, null, 2));
+    console.log('User ID:', req.userId);
+    
     const {
       title,
       description,
@@ -221,26 +226,44 @@ router.post('/', authenticate, async (req, res) => {
       isDraft,
     } = req.body;
 
-    const skill = await Skill.create({
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Skill title is required.',
+      });
+    }
+    
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category is required.',
+      });
+    }
+
+    const skillData = {
       user: req.userId,
-      title,
-      description: description || fullDescription,
+      title: title.trim(),
+      description: (description || fullDescription || '').trim(),
       category,
-      expertise: (expertise || level || 'intermediate').toLowerCase(), // Convert to lowercase
-      tags,
-      pricing,
-      availability,
-      prerequisites: requirements || prerequisites,
-      learningOutcomes: outcomes || learningOutcomes,
-      projects,
+      expertise: (expertise || level || 'intermediate').toLowerCase(),
+      tags: tags || [],
+      availability: availability || [],
+      prerequisites: requirements || prerequisites || [],
+      learningOutcomes: outcomes || learningOutcomes || [],
+      projects: projects || [],
       teachingMode: (teachingMode || mode || 'online').toLowerCase(),
-      sessionDuration: sessionDuration || duration || 60,
-      maxStudents: maxStudents || 1,
+      sessionDuration: parseInt(sessionDuration || duration) || 60,
+      maxStudents: parseInt(maxStudents) || 1,
       isPremium: isPremium || false,
-      price: price || 0,
+      price: parseInt(price) || 0,
       language: language || 'english',
-      isActive: !isDraft, // If isDraft is true, set isActive to false
-    });
+      isActive: !isDraft,
+    };
+    
+    console.log('Skill data to create:', JSON.stringify(skillData, null, 2));
+
+    const skill = await Skill.create(skillData);
 
     // Update user's skillsOffered
     const User = (await import('../models/User.js')).default;
@@ -258,9 +281,11 @@ router.post('/', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Create skill error:', error);
+    console.error('Error details:', error.message);
     
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
+      console.error('Validation errors:', messages);
       return res.status(400).json({
         success: false,
         message: messages[0],
@@ -270,7 +295,7 @@ router.post('/', authenticate, async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: 'Error creating skill.',
+      message: error.message || 'Error creating skill.',
     });
   }
 });
