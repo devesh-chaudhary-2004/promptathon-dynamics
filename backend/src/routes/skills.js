@@ -185,9 +185,19 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
-    // Increment view count
-    skill.stats.views = (skill.stats.views || 0) + 1;
-    await skill.save();
+    // Increment view count safely
+    if (!skill.stats) {
+      skill.stats = { views: 1 };
+    } else {
+      skill.stats.views = (skill.stats.views || 0) + 1;
+    }
+    
+    try {
+      await skill.save();
+    } catch (saveError) {
+      // Log but don't fail if view count save fails
+      console.error('Failed to save view count:', saveError);
+    }
 
     res.json({
       success: true,
@@ -197,7 +207,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
     console.error('Get skill error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching skill.',
+      message: error.message || 'Error fetching skill.',
     });
   }
 });
