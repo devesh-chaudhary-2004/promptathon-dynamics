@@ -64,8 +64,8 @@ router.get('/', authenticate, async (req, res) => {
     })
       .populate('requester', 'name avatar')
       .populate('provider', 'name avatar')
-      .populate('skillOffered', 'title')
-      .populate('skillWanted', 'title')
+      .populate('skill', 'title')
+      .populate('offeredSkill', 'title')
       .sort({ updatedAt: -1 })
       .limit(5);
 
@@ -231,7 +231,7 @@ router.get('/stats', authenticate, async (req, res) => {
       {
         $lookup: {
           from: 'skills',
-          localField: 'skillOffered',
+          localField: 'offeredSkill',
           foreignField: '_id',
           as: 'skill',
         },
@@ -286,7 +286,8 @@ router.get('/activity', authenticate, async (req, res) => {
       })
         .populate('requester', 'name avatar')
         .populate('provider', 'name avatar')
-        .populate('skillOffered', 'title')
+        .populate('skill', 'title')
+        .populate('offeredSkill', 'title')
         .sort({ updatedAt: -1 })
         .limit(20),
       Review.find({

@@ -30,8 +30,8 @@ router.get('/', authenticate, async (req, res) => {
     const swaps = await SwapRequest.find(query)
       .populate('requester', 'name avatar rating')
       .populate('provider', 'name avatar rating')
-      .populate('skillOffered', 'title category')
-      .populate('skillWanted', 'title category')
+      .populate('skill', 'title category')
+      .populate('offeredSkill', 'title category')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -65,8 +65,8 @@ router.get('/:id', authenticate, async (req, res) => {
     const swap = await SwapRequest.findById(req.params.id)
       .populate('requester', 'name avatar rating university bio')
       .populate('provider', 'name avatar rating university bio')
-      .populate('skillOffered', 'title category description pricing')
-      .populate('skillWanted', 'title category description pricing');
+      .populate('skill', 'title category description price')
+      .populate('offeredSkill', 'title category description price');
 
     if (!swap) {
       return res.status(404).json({
@@ -611,7 +611,7 @@ router.post('/:id/review', authenticate, async (req, res) => {
       reviewer: req.userId,
       reviewee,
       swapRequest: swap._id,
-      skill: isRequester ? swap.skillWanted : swap.skillOffered,
+      skill: isRequester ? swap.skill : swap.offeredSkill,
       type: 'swap',
       rating,
       content,
