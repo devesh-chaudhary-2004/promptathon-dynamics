@@ -222,7 +222,7 @@ export function SkillMarketplacePage() {
   const handleShareSkill = (skill: Skill, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard.writeText(`${window.location.origin}/skills/${skill._id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/skill/${skill._id}`);
     toast.success("Link copied to clipboard!");
   };
 

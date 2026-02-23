@@ -175,8 +175,19 @@ router.get('/categories', async (req, res) => {
 // @access  Public
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const skill = await Skill.findById(req.params.id)
-      .populate('user', 'name avatar rating university bio totalReviews stats socialLinks');
+    const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid skill ID format.',
+      });
+    }
+
+    const skill = await Skill.findById(id)
+      .populate('user', 'name avatar rating university bio totalReviews stats socialLinks')
+      .lean(); // Use lean() for better performance since we'll handle stats separately
 
     if (!skill) {
       return res.status(404).json({
@@ -185,19 +196,10 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
-    // Increment view count safely
-    if (!skill.stats) {
-      skill.stats = { views: 1 };
-    } else {
-      skill.stats.views = (skill.stats.views || 0) + 1;
-    }
-    
-    try {
-      await skill.save();
-    } catch (saveError) {
-      // Log but don't fail if view count save fails
-      console.error('Failed to save view count:', saveError);
-    }
+    // Increment view count in background (don't block response)
+    Skill.findByIdAndUpdate(id, { $inc: { 'stats.views': 1 } }).catch(err => {
+      console.error('Failed to increment view count:', err);
+    });
 
     res.json({
       success: true,
@@ -205,6 +207,15 @@ router.get('/:id', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get skill error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid skill ID.',
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message || 'Error fetching skill.',
