@@ -2,7 +2,6 @@ import express from 'express';
 import User from '../models/User.js';
 import Skill from '../models/Skill.js';
 import Course from '../models/Course.js';
-import Workshop from '../models/Workshop.js';
 import SwapRequest from '../models/SwapRequest.js';
 import Notification from '../models/Notification.js';
 import Review from '../models/Review.js';
@@ -31,7 +30,6 @@ router.get('/', authenticate, async (req, res) => {
       activeSwaps,
       completedSwaps,
       totalCourses,
-      totalWorkshops,
       unreadMessages,
       unreadNotifications,
     ] = await Promise.all([
@@ -51,7 +49,6 @@ router.get('/', authenticate, async (req, res) => {
         status: 'completed',
       }),
       Course.countDocuments({ 'enrolledStudents.user': userId }),
-      Workshop.countDocuments({ 'participants.user': userId }),
       Conversation.aggregate([
         { $match: { participants: userId } },
         { $unwind: '$unreadCounts' },
@@ -98,16 +95,6 @@ router.get('/', authenticate, async (req, res) => {
       };
     });
 
-    // Get upcoming workshops
-    const upcomingWorkshops = await Workshop.find({
-      'participants.user': userId,
-      'schedule.startDate': { $gte: new Date() },
-      status: 'scheduled',
-    })
-      .populate('host', 'name avatar')
-      .sort({ 'schedule.startDate': 1 })
-      .limit(5);
-
     // Get skill recommendations based on user's interests
     const recommendedSkills = await Skill.find({
       user: { $ne: userId },
@@ -135,7 +122,6 @@ router.get('/', authenticate, async (req, res) => {
           name: user.name,
           email: user.email,
           avatar: user.avatar,
-          credits: user.credits,
           rating: user.rating,
           totalReviews: user.totalReviews,
           isVerified: user.isVerified,
@@ -147,13 +133,11 @@ router.get('/', authenticate, async (req, res) => {
           interests: user.interests,
         },
         stats: {
-          credits: user.credits,
           totalSwaps,
           pendingSwaps,
           activeSwaps,
           completedSwaps,
           totalCourses,
-          totalWorkshops,
           unreadMessages,
           unreadNotifications,
           skillsTaught: user.stats?.skillsTaught || 0,
@@ -163,7 +147,6 @@ router.get('/', authenticate, async (req, res) => {
         recentActivity: recentSwaps,
         notifications,
         enrolledCourses: coursesWithProgress,
-        upcomingWorkshops,
         recommendedSkills,
         recentReviews,
       },
@@ -368,7 +351,6 @@ router.get('/notifications', authenticate, async (req, res) => {
       .populate('relatedUser', 'name avatar')
       .populate('relatedSkill', 'title')
       .populate('relatedCourse', 'title')
-      .populate('relatedWorkshop', 'title')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));

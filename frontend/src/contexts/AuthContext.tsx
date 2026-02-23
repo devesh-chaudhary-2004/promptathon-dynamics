@@ -7,7 +7,6 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
-  credits: number;
   isVerified: boolean;
   city?: string;
   college?: string;

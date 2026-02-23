@@ -109,7 +109,6 @@ router.post('/signup', rateLimit(60000, 10), async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        credits: user.credits,
         isVerified: user.isVerified,
         city: user.city,
         college: user.college,
@@ -199,7 +198,6 @@ router.post('/login', rateLimit(60000, 10), async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        credits: user.credits,
         isVerified: user.isVerified,
         city: user.city,
         college: user.college,
@@ -524,7 +522,6 @@ router.post('/google', async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        credits: user.credits,
         isVerified: user.isVerified,
       },
     });

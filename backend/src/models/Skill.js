@@ -15,7 +15,7 @@ const skillSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: ['Development', 'Design', 'Data-Science', 'Marketing', 'Music', 'Writing', 'Business', 'Languages', 'Science', 'DSA', 'Deployment', 'AI-ML', 'AI/ML', 'Cloud', 'Other'],
+    enum: ['development', 'design', 'data-science', 'marketing', 'music', 'writing', 'business', 'languages', 'science', 'dsa', 'deployment', 'ai-ml', 'cloud', 'other'],
   },
   tags: [{
     type: String,
@@ -55,11 +55,19 @@ const skillSchema = new mongoose.Schema({
     type: String,
     default: 'english',
   },
-  // Pricing
-  isPremium: {
-    type: Boolean,
-    default: false,
+  // Teaching options - exchange skill or paid only
+  teachingOption: {
+    type: String,
+    enum: ['exchange', 'paid-only'],
+    default: 'exchange',
   },
+  // Skill wanted in return (for exchange option)
+  wantedSkillInReturn: {
+    type: String,
+    trim: true,
+    maxLength: [200, 'Wanted skill description cannot exceed 200 characters'],
+  },
+  // Price for paid-only option (in currency)
   price: {
     type: Number,
     default: 0,

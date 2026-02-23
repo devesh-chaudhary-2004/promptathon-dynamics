@@ -626,12 +626,7 @@ export function DashboardPage() {
                       <span>Find Skills</span>
                     </Button>
                   </Link>
-                  <Link to="/workshops">
-                    <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10">
-                      <Video className="h-5 w-5" />
-                      <span>Workshops</span>
-                    </Button>
-                  </Link>
+
                   <Link to="/messages">
                     <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10">
                       <MessageSquare className="h-5 w-5" />

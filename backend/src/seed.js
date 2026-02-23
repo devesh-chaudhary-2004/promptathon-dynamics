@@ -12,7 +12,6 @@ dotenv.config({ path: join(__dirname, '../.env') });
 import User from './models/User.js';
 import Skill from './models/Skill.js';
 import Course from './models/Course.js';
-import Workshop from './models/Workshop.js';
 import Review from './models/Review.js';
 import SwapRequest from './models/SwapRequest.js';
 
@@ -26,7 +25,6 @@ const seedDatabase = async () => {
       User.deleteMany({}),
       Skill.deleteMany({}),
       Course.deleteMany({}),
-      Workshop.deleteMany({}),
       Review.deleteMany({}),
       SwapRequest.deleteMany({}),
     ]);
@@ -411,103 +409,51 @@ const seedDatabase = async () => {
     ]);
     console.log('Created courses');
 
-    // Create workshops
-    const now = new Date();
-    const workshops = await Workshop.create([
-      {
-        title: 'Building a Real-time Chat App with Socket.IO',
-        description: 'Join this hands-on workshop where we build a complete real-time chat application from scratch using React and Socket.IO. Learn WebSocket fundamentals and implement features like typing indicators, online status, and message history.',
-        host: users[0]._id,
-        thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
-        category: 'development',
-        type: 'live',
-        scheduledDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
-        startTime: '14:00',
-        duration: 180,
-        maxParticipants: 50,
-        participants: [users[1]._id, users[2]._id, users[3]._id],
-        price: 0,
-        status: 'published',
-        tags: ['react', 'socket.io', 'real-time', 'nodejs'],
-        requirements: ['Basic React knowledge', 'Node.js installed', 'Code editor'],
-      },
-      {
-        title: 'Design Systems Workshop: From Concept to Implementation',
-        description: 'Learn how to create scalable design systems that bridge the gap between design and development. We will build a complete design system in Figma with components, tokens, and documentation.',
-        host: users[1]._id,
-        thumbnail: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800',
-        category: 'design',
-        type: 'live',
-        scheduledDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 2 weeks from now
-        startTime: '10:00',
-        duration: 180,
-        maxParticipants: 30,
-        participants: [users[0]._id, users[4]._id],
-        price: 10,
-        status: 'published',
-        tags: ['figma', 'design-systems', 'ui-design', 'components'],
-        requirements: ['Figma account', 'Basic design knowledge'],
-      },
-      {
-        title: 'Intro to Neural Networks with TensorFlow',
-        description: 'Demystify neural networks in this beginner-friendly workshop. We will cover the basics of deep learning, build a neural network from scratch, and train it to recognize handwritten digits.',
-        host: users[2]._id,
-        thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',
-        category: 'ai-ml',
-        type: 'live',
-        scheduledDate: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000), // 3 weeks from now
-        startTime: '15:00',
-        duration: 180,
-        maxParticipants: 40,
-        participants: [users[0]._id, users[1]._id, users[5]._id],
-        price: 15,
-        status: 'published',
-        tags: ['tensorflow', 'neural-networks', 'deep-learning', 'python'],
-        requirements: ['Python basics', 'Jupyter Notebook installed'],
-      },
-    ]);
-    console.log('Created workshops');
-
     // Create reviews
     await Review.create([
       {
         reviewer: users[1]._id,
         reviewee: users[0]._id,
         skill: skills[0]._id,
+        type: 'skill',
         rating: 5,
-        comment: 'Alex is an amazing teacher! His React course was incredibly thorough and he explained complex concepts in a way that was easy to understand. I went from knowing nothing about React to building my own projects in just a few weeks.',
+        content: 'Alex is an amazing teacher! His React course was incredibly thorough and he explained complex concepts in a way that was easy to understand. I went from knowing nothing about React to building my own projects in just a few weeks.',
         detailedRatings: { communication: 5, knowledge: 5, punctuality: 5, teaching: 5, value: 5 },
       },
       {
         reviewer: users[2]._id,
         reviewee: users[0]._id,
         skill: skills[0]._id,
+        type: 'skill',
         rating: 5,
-        comment: 'Excellent instructor! Patient and knowledgeable. The hands-on projects really helped cement the concepts.',
+        content: 'Excellent instructor! Patient and knowledgeable. The hands-on projects really helped cement the concepts.',
         detailedRatings: { communication: 5, knowledge: 5, punctuality: 4, teaching: 5, value: 5 },
       },
       {
         reviewer: users[0]._id,
         reviewee: users[1]._id,
         skill: skills[1]._id,
+        type: 'skill',
         rating: 5,
-        comment: 'Sarah has a great eye for design and explains the reasoning behind her decisions. My Figma skills improved dramatically after our sessions.',
+        content: 'Sarah has a great eye for design and explains the reasoning behind her decisions. My Figma skills improved dramatically after our sessions.',
         detailedRatings: { communication: 5, knowledge: 5, punctuality: 5, teaching: 5, value: 5 },
       },
       {
         reviewer: users[3]._id,
         reviewee: users[4]._id,
         skill: skills[4]._id,
+        type: 'skill',
         rating: 5,
-        comment: 'James is a fantastic piano teacher! He adapts his teaching style to your level and makes learning fun. I can now play my favorite songs!',
+        content: 'James is a fantastic piano teacher! He adapts his teaching style to your level and makes learning fun. I can now play my favorite songs!',
         detailedRatings: { communication: 5, knowledge: 5, punctuality: 5, teaching: 5, value: 5 },
       },
       {
         reviewer: users[0]._id,
         reviewee: users[5]._id,
         skill: skills[5]._id,
+        type: 'skill',
         rating: 4,
-        comment: 'Lisa is a patient teacher and native speaker. My Mandarin pronunciation has improved significantly. Would recommend to anyone starting their Chinese learning journey.',
+        content: 'Lisa is a patient teacher and native speaker. My Mandarin pronunciation has improved significantly. Would recommend to anyone starting their Chinese learning journey.',
         detailedRatings: { communication: 4, knowledge: 5, punctuality: 4, teaching: 5, value: 4 },
       },
     ]);

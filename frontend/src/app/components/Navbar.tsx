@@ -10,7 +10,6 @@ import {
   Bell,
   User,
   BookOpen,
-  Video,
   Zap,
   Menu,
   X,
@@ -18,14 +17,7 @@ import {
   Settings,
   LogOut,
   Crown,
-  Star,
-  Palette,
-  Code,
-  Music,
-  PenTool,
-  Database,
-  Rocket,
-  Brain
+  Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/app/components/ui/badge";
@@ -37,27 +29,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/app/components/ui/navigation-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-
-const categories = [
-  { name: "Development", icon: Code, color: "from-teal-500 to-cyan-500", count: "2.5K+" },
-  { name: "Design", icon: Palette, color: "from-teal-400 to-emerald-500", count: "1.8K+" },
-  { name: "Music", icon: Music, color: "from-cyan-500 to-teal-500", count: "950+" },
-  { name: "Writing", icon: PenTool, color: "from-emerald-500 to-teal-500", count: "720+" },
-  { name: "Data Science", icon: Database, color: "from-teal-600 to-cyan-500", count: "1.2K+" },
-  { name: "AI & ML", icon: Brain, color: "from-cyan-600 to-teal-400", count: "890+" },
-];
 
 export function Navbar() {
   const location = useLocation();
@@ -65,7 +40,6 @@ export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const userCredits = user?.credits || 0;
   const unreadMessages = 3;
   const notifications = 5;
 
@@ -103,54 +77,11 @@ export function Navbar() {
             Home
           </NavLink>
           
-          {/* Categories Dropdown */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
-                  Categories
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid w-[500px] gap-3 p-4 md:grid-cols-2 bg-slate-900/95 border border-white/10 rounded-xl">
-                    {categories.map((category) => (
-                      <Link
-                        key={category.name}
-                        to={`/marketplace?category=${category.name.toLowerCase()}`}
-                      >
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
-                          className="flex items-center gap-3 rounded-lg p-3 hover:bg-white/5 transition-colors"
-                        >
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${category.color}`}>
-                            <category.icon className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">{category.name}</p>
-                            <p className="text-xs text-gray-400">{category.count} skills</p>
-                          </div>
-                        </motion.div>
-                      </Link>
-                    ))}
-                    <Link to="/marketplace" className="md:col-span-2">
-                      <Button variant="outline" className="w-full border-white/10 text-white hover:bg-white/10 mt-2">
-                        <Search className="mr-2 h-4 w-4" />
-                        Browse All Categories
-                      </Button>
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
           <NavLink to="/marketplace" icon={Search}>
             Marketplace
           </NavLink>
           <NavLink to="/courses" icon={BookOpen}>
             Courses
-          </NavLink>
-          <NavLink to="/workshops" icon={Video}>
-            Workshops
           </NavLink>
           
           {isAuthenticated && (
@@ -174,15 +105,6 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
-              {/* Credits Badge */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border border-teal-500/30"
-              >
-                <Zap className="h-4 w-4 text-teal-400" />
-                <span className="text-sm font-semibold font-heading text-white">{userCredits.toLocaleString()}</span>
-              </motion.div>
-
               {/* Notifications */}
               <Button
                 variant="ghost"
@@ -235,13 +157,9 @@ export function Navbar() {
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between rounded-lg bg-white/5 p-2">
-                      <div className="flex items-center gap-1.5">
-                        <Zap className="h-4 w-4 text-yellow-400" />
-                        <span className="text-sm text-gray-300">{userCredits.toLocaleString()} Credits</span>
-                      </div>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-300">4.8</span>
+                        <span className="text-sm text-gray-300">4.8 Rating</span>
                       </div>
                     </div>
                   </div>
@@ -331,9 +249,7 @@ export function Navbar() {
               <MobileNavLink to="/courses" icon={BookOpen} onClick={() => setMobileMenuOpen(false)}>
                 Courses
               </MobileNavLink>
-              <MobileNavLink to="/workshops" icon={Video} onClick={() => setMobileMenuOpen(false)}>
-                Workshops
-              </MobileNavLink>
+
               {isAuthenticated && (
                 <>
                   <MobileNavLink to="/dashboard" icon={LayoutDashboard} onClick={() => setMobileMenuOpen(false)}>
@@ -350,27 +266,6 @@ export function Navbar() {
                   </MobileNavLink>
                 </>
               )}
-              
-              {/* Categories */}
-              <div className="pt-4 border-t border-white/10">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-3">Categories</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {categories.map((category) => (
-                    <Link
-                      key={category.name}
-                      to={`/marketplace?category=${category.name.toLowerCase()}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${category.color}`}>
-                          <category.icon className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-sm text-gray-300">{category.name}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
             </div>
           </motion.div>
         )}

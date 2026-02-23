@@ -64,13 +64,21 @@ export function LoginPage() {
       toast.success("Welcome back to SkillX!", {
         description: "You've been successfully logged in.",
       });
-      // Navigate immediately after successful login
-      window.location.href = "/dashboard";
+      // Use navigate for SPA routing instead of hard redirect
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error("Login failed", {
-        description: error.message || "Please check your credentials and try again.",
-      });
+      const errorMessage = error.message || "Please check your credentials and try again.";
+      // Check if it's a network error
+      if (error.message?.includes("Network Error") || error.code === "ERR_NETWORK") {
+        toast.error("Connection failed", {
+          description: "Cannot connect to server. Make sure the backend is running.",
+        });
+      } else {
+        toast.error("Login failed", {
+          description: errorMessage,
+        });
+      }
       setIsLoading(false);
     }
   };

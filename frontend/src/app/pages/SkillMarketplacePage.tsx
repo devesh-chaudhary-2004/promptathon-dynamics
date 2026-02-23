@@ -76,7 +76,7 @@ interface Skill {
   createdAt: string;
 }
 
-const categories = ["All", "development", "design", "dsa", "marketing", "science", "music", "ai-ml", "cloud", "business"];
+const categories = ["All", "development", "design", "dsa", "marketing", "music", "ai-ml", "cloud", "business", "languages", "science", "other"];
 const modes = ["All Modes", "online", "offline", "hybrid"];
 const levels = ["All Levels", "beginner", "intermediate", "advanced", "expert"];
 const sortOptions = [
@@ -137,7 +137,10 @@ export function SkillMarketplacePage() {
   const [page, setPage] = useState(1);
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
+  const urlCategory = searchParams.get("category")?.toLowerCase() || "All";
+  const [selectedCategory, setSelectedCategory] = useState(
+    categories.includes(urlCategory) ? urlCategory : "All"
+  );
   const [selectedMode, setSelectedMode] = useState("All Modes");
   const [selectedLevel, setSelectedLevel] = useState("All Levels");
   const [sortBy, setSortBy] = useState("newest");
@@ -473,7 +476,7 @@ export function SkillMarketplacePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Link to={`/skills/${skill._id}`}>
+                <Link to={`/skill/${skill._id}`}>
                   <Card className="border-white/10 bg-white/5 backdrop-blur-xl transition-all hover:border-teal-500/50 hover:bg-white/10 group cursor-pointer h-full">
                     <CardContent className="p-6">
                       {/* Header */}

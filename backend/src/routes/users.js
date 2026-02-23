@@ -268,52 +268,6 @@ router.get('/:id/reviews', async (req, res) => {
   }
 });
 
-// @route   POST /api/users/credits/add
-// @desc    Add credits to user (admin or system)
-// @access  Private
-router.post('/credits/add', authenticate, async (req, res) => {
-  try {
-    const { amount, reason } = req.body;
-
-    const user = await User.findById(req.userId);
-    user.credits += amount;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: `${amount} credits added.`,
-      data: { credits: user.credits },
-    });
-  } catch (error) {
-    console.error('Add credits error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error adding credits.',
-    });
-  }
-});
-
-// @route   GET /api/users/credits/history
-// @desc    Get user's credit history
-// @access  Private
-router.get('/credits/history', authenticate, async (req, res) => {
-  try {
-    // This would typically come from a CreditTransaction model
-    // For now, return placeholder data
-    res.json({
-      success: true,
-      data: [],
-      message: 'Credit history feature coming soon.',
-    });
-  } catch (error) {
-    console.error('Get credit history error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching credit history.',
-    });
-  }
-});
-
 // @route   DELETE /api/users/account
 // @desc    Deactivate user account
 // @access  Private

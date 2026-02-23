@@ -10,7 +10,6 @@ import { SkillDetailPage } from "@/app/pages/SkillDetailPage";
 import { ProfilePage } from "@/app/pages/ProfilePage";
 import { MessagesPage } from "@/app/pages/MessagesPage";
 import { CoursesPage } from "@/app/pages/CoursesPage";
-import { WorkshopsPage } from "@/app/pages/WorkshopsPage";
 import { NotFoundPage } from "@/app/pages/NotFoundPage";
 
 // Redirect component for /skills to /marketplace
@@ -39,7 +38,6 @@ export const router = createBrowserRouter([
       { path: "messages", Component: MessagesPage },
       { path: "messages/:conversationId", Component: MessagesPage },
       { path: "courses", Component: CoursesPage },
-      { path: "workshops", Component: WorkshopsPage },
       { path: "settings", Component: DashboardPage }, // Temporary - use dashboard for settings
       { path: "*", Component: NotFoundPage },
     ],

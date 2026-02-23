@@ -11,7 +11,6 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import skillRoutes from './routes/skills.js';
 import courseRoutes from './routes/courses.js';
-import workshopRoutes from './routes/workshops.js';
 import messageRoutes from './routes/messages.js';
 import swapRoutes from './routes/swaps.js';
 import dashboardRoutes from './routes/dashboard.js';
@@ -95,7 +94,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/courses', courseRoutes);
-app.use('/api/workshops', workshopRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/swaps', swapRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -130,10 +128,38 @@ mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/skillx')
   .then(() => {
     console.log('✅ Connected to MongoDB');
-    httpServer.listen(PORT, () => {
+    
+    const server = httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Socket.IO ready for real-time communication`);
     });
+
+    // Handle port already in use
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use.`);
+        console.error(`💡 Try: taskkill /F /IM node.exe (Windows) or lsof -ti:${PORT} | xargs kill (Mac/Linux)`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', err);
+        process.exit(1);
+      }
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = () => {
+      console.log('\\n🛑 Shutting down gracefully...');
+      server.close(() => {
+        console.log('✅ HTTP server closed');
+        mongoose.connection.close(false).then(() => {
+          console.log('✅ MongoDB connection closed');
+          process.exit(0);
+        });
+      });
+    };
+
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err);

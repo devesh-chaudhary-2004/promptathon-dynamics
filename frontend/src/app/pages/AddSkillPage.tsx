@@ -37,25 +37,26 @@ import { skillsAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const categories = [
-  { value: "Development", label: "Development", icon: "💻" },
-  { value: "Design", label: "Art & Design", icon: "🎨" },
-  { value: "Music", label: "Music", icon: "🎵" },
-  { value: "Writing", label: "Writing", icon: "✍️" },
-  { value: "Science", label: "Science", icon: "🔬" },
-  { value: "DSA", label: "DSA", icon: "📊" },
-  { value: "Deployment", label: "Deployment", icon: "🚀" },
-  { value: "Marketing", label: "Marketing", icon: "📈" },
-  { value: "Business", label: "Business", icon: "💼" },
-  { value: "Languages", label: "Languages", icon: "🌐" },
-  { value: "AI/ML", label: "AI & ML", icon: "🤖" },
-  { value: "Other", label: "Other", icon: "📦" },
+  { value: "development", label: "Development", icon: "💻" },
+  { value: "design", label: "Art & Design", icon: "🎨" },
+  { value: "music", label: "Music", icon: "🎵" },
+  { value: "writing", label: "Writing", icon: "✍️" },
+  { value: "science", label: "Science", icon: "🔬" },
+  { value: "dsa", label: "DSA", icon: "📊" },
+  { value: "deployment", label: "Deployment", icon: "🚀" },
+  { value: "marketing", label: "Marketing", icon: "📈" },
+  { value: "business", label: "Business", icon: "💼" },
+  { value: "languages", label: "Languages", icon: "🌐" },
+  { value: "ai-ml", label: "AI & ML", icon: "🤖" },
+  { value: "cloud", label: "Cloud", icon: "☁️" },
+  { value: "other", label: "Other", icon: "📦" },
 ];
 
 const expertiseLevels = [
-  { value: "Beginner", label: "Beginner", description: "Basic understanding, learning stage" },
-  { value: "Intermediate", label: "Intermediate", description: "Good working knowledge" },
-  { value: "Advanced", label: "Advanced", description: "Deep expertise, can handle complex topics" },
-  { value: "Expert", label: "Expert", description: "Industry-level mastery" },
+  { value: "beginner", label: "Beginner", description: "Basic understanding, learning stage" },
+  { value: "intermediate", label: "Intermediate", description: "Good working knowledge" },
+  { value: "advanced", label: "Advanced", description: "Deep expertise, can handle complex topics" },
+  { value: "expert", label: "Expert", description: "Industry-level mastery" },
 ];
 
 const availabilitySlots = [
@@ -80,7 +81,7 @@ export function AddSkillPage() {
   const { id } = useParams<{ id: string }>(); // For edit mode
   const { user, isAuthenticated } = useAuth();
   
-  const [isPremium, setIsPremium] = useState(false);
+  const [teachingOption, setTeachingOption] = useState<'exchange' | 'paid-only'>('exchange');
   const [projects, setProjects] = useState<{ title: string; url: string; description: string }[]>([
     { title: "", url: "", description: "" }
   ]);
@@ -98,11 +99,11 @@ export function AddSkillPage() {
     level: "",
     description: "",
     fullDescription: "",
-    mode: "Online",
+    mode: "online",
     duration: "60",
     maxStudents: "1",
     price: "",
-    skillsWanted: "",
+    wantedSkillInReturn: "",
     language: "english",
     location: "",
   });
@@ -125,19 +126,19 @@ export function AddSkillPage() {
       setFormData({
         title: skill.title || "",
         category: skill.category || "",
-        level: skill.level || "",
+        level: skill.expertise || skill.level || "",
         description: skill.description || "",
         fullDescription: skill.fullDescription || "",
-        mode: skill.mode || "Online",
-        duration: skill.duration?.toString() || "60",
+        mode: skill.teachingMode || skill.mode || "online",
+        duration: skill.sessionDuration?.toString() || skill.duration?.toString() || "60",
         maxStudents: skill.maxStudents?.toString() || "1",
         price: skill.price?.toString() || "",
-        skillsWanted: skill.skillsWanted || "",
+        wantedSkillInReturn: skill.wantedSkillInReturn || "",
         language: skill.language || "english",
         location: skill.location || "",
       });
       
-      setIsPremium(skill.isPremium || false);
+      setTeachingOption(skill.teachingOption || 'exchange');
       setTags(skill.tags || []);
       setProjects(skill.projects?.length > 0 ? skill.projects : [{ title: "", url: "", description: "" }]);
       setPrerequisites(skill.prerequisites?.length > 0 ? skill.prerequisites : [""]);
@@ -185,15 +186,18 @@ export function AddSkillPage() {
       const skillData = {
         title: formData.title.trim(),
         category: formData.category,
-        level: formData.level,
+        expertise: formData.level, // Backend expects 'expertise'
+        level: formData.level, // Keep for compatibility
         description: formData.description.trim(),
         fullDescription: formData.fullDescription.trim(),
-        mode: formData.mode,
-        duration: parseInt(formData.duration),
+        teachingMode: formData.mode, // Backend expects 'teachingMode'
+        mode: formData.mode, // Keep for compatibility
+        sessionDuration: parseInt(formData.duration),
+        duration: parseInt(formData.duration), // Keep for compatibility
         maxStudents: parseInt(formData.maxStudents),
-        isPremium,
-        price: isPremium ? parseInt(formData.price) || 0 : 0,
-        skillsWanted: formData.skillsWanted.trim(),
+        teachingOption,
+        price: teachingOption === 'paid-only' ? parseInt(formData.price) || 0 : 0,
+        wantedSkillInReturn: teachingOption === 'exchange' ? formData.wantedSkillInReturn.trim() : '',
         language: formData.language,
         location: formData.location.trim(),
         tags: tags.filter(t => t.trim()),
@@ -751,9 +755,9 @@ export function AddSkillPage() {
                   </Label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: "Online", label: "Online", icon: Globe, description: "Video calls" },
-                      { value: "Offline", label: "Offline", icon: MapPin, description: "In-person" },
-                      { value: "Hybrid", label: "Hybrid", icon: Zap, description: "Both options" },
+                      { value: "online", label: "Online", icon: Globe, description: "Video calls" },
+                      { value: "offline", label: "Offline", icon: MapPin, description: "In-person" },
+                      { value: "hybrid", label: "Hybrid", icon: Zap, description: "Both options" },
                     ].map((mode) => (
                       <button
                         key={mode.value}
@@ -883,88 +887,141 @@ export function AddSkillPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Premium Toggle */}
-                <div className="space-y-4 rounded-lg border border-teal-500/30 bg-teal-500/10 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="premium" className="text-white">
-                          Premium Skill
-                        </Label>
-                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500">
-                          <Sparkles className="mr-1 h-3 w-3" />
-                          Premium
-                        </Badge>
+                {/* Teaching Option Selection */}
+                <div className="space-y-4">
+                  <Label className="text-white text-base">How would you like to teach this skill?</Label>
+                  
+                  {/* Exchange Option */}
+                  <div 
+                    onClick={() => setTeachingOption('exchange')}
+                    className={`cursor-pointer rounded-lg border p-4 transition-all ${
+                      teachingOption === 'exchange' 
+                        ? 'border-teal-500 bg-teal-500/10' 
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                        teachingOption === 'exchange' ? 'border-teal-500' : 'border-gray-500'
+                      }`}>
+                        {teachingOption === 'exchange' && (
+                          <div className="h-2 w-2 rounded-full bg-teal-500" />
+                        )}
                       </div>
-                      <p className="text-sm text-gray-300">
-                        Charge skill credits for your expertise
-                      </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white">Skill Exchange</span>
+                          <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+                            <Zap className="mr-1 h-3 w-3" />
+                            Recommended
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Teach this skill in exchange for learning another skill from the learner
+                        </p>
+                      </div>
                     </div>
-                    <Switch
-                      id="premium"
-                      checked={isPremium}
-                      onCheckedChange={setIsPremium}
-                    />
+                    
+                    {teachingOption === 'exchange' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 pt-4 border-t border-white/10"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="wantedSkillInReturn" className="text-gray-300">
+                            What skill would you like to learn in return?
+                          </Label>
+                          <Input
+                            id="wantedSkillInReturn"
+                            name="wantedSkillInReturn"
+                            placeholder="e.g., Python, Guitar, Marketing, Video Editing..."
+                            value={formData.wantedSkillInReturn}
+                            onChange={handleChange}
+                            className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
+                          />
+                          <p className="text-xs text-gray-500">
+                            This helps match you with learners who can teach what you want to learn
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
 
-                  {isPremium && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-4 pt-4 border-t border-white/10"
-                    >
-                      <div className="space-y-2">
-                        <Label htmlFor="price" className="text-gray-300">
-                          Price (Skill Credits per session)
-                        </Label>
-                        <Input
-                          id="price"
-                          name="price"
-                          type="number"
-                          min="0"
-                          placeholder="500"
-                          value={formData.price}
-                          onChange={handleChange}
-                          className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          {[250, 500, 750, 1000].map((price) => (
-                            <Button
-                              key={price}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setFormData(prev => ({ ...prev, price: price.toString() }))}
-                              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            >
-                              {price}
-                            </Button>
-                          ))}
-                        </div>
+                  {/* Paid Only Option */}
+                  <div 
+                    onClick={() => setTeachingOption('paid-only')}
+                    className={`cursor-pointer rounded-lg border p-4 transition-all ${
+                      teachingOption === 'paid-only' 
+                        ? 'border-yellow-500 bg-yellow-500/10' 
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                        teachingOption === 'paid-only' ? 'border-yellow-500' : 'border-gray-500'
+                      }`}>
+                        {teachingOption === 'paid-only' && (
+                          <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                        )}
                       </div>
-                    </motion.div>
-                  )}
-                </div>
-
-                {/* Skill Exchange */}
-                <div className="space-y-2">
-                  <Label htmlFor="skillsWanted" className="text-gray-300 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-blue-400" />
-                    Skills You'd Like in Exchange
-                  </Label>
-                  <Textarea
-                    id="skillsWanted"
-                    name="skillsWanted"
-                    placeholder="List skills you're interested in learning as exchange (e.g., Python, Music Production, Marketing)"
-                    rows={2}
-                    value={formData.skillsWanted}
-                    onChange={handleChange}
-                    className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
-                  />
-                  <p className="text-xs text-gray-500">
-                    This helps match you with learners who have skills you want
-                  </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white">Paid Teaching</span>
+                          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500">
+                            <Sparkles className="mr-1 h-3 w-3" />
+                            Premium
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Teach this skill for a fixed price (no exchange required)
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {teachingOption === 'paid-only' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 pt-4 border-t border-white/10"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="price" className="text-gray-300">
+                            Price per session (₹)
+                          </Label>
+                          <Input
+                            id="price"
+                            name="price"
+                            type="number"
+                            min="0"
+                            placeholder="500"
+                            value={formData.price}
+                            onChange={handleChange}
+                            className="border-white/10 bg-white/5 text-white placeholder:text-gray-500"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            {[200, 500, 1000, 2000].map((price) => (
+                              <Button
+                                key={price}
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFormData(prev => ({ ...prev, price: price.toString() }));
+                                }}
+                                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              >
+                                ₹{price}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

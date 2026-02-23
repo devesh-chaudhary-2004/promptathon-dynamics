@@ -24,31 +24,45 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const query = { isActive: true };
 
-    // Text search
+    // Search by title, description, tags, or category (regex for partial matching)
     if (search) {
-      query.$text = { $search: search };
+      const searchRegex = new RegExp(search, 'i');
+      const searchConditions = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { tags: searchRegex },
+        { category: searchRegex }
+      ];
+      
+      // If category filter is also provided, search within that category only
+      if (category) {
+        query.$and = [
+          { $or: searchConditions },
+          { category: new RegExp(`^${category}$`, 'i') }
+        ];
+      } else {
+        query.$or = searchConditions;
+      }
+    } else if (category) {
+      // Only category filter, no search
+      query.category = new RegExp(`^${category}$`, 'i');
     }
 
-    // Category filter
-    if (category) {
-      query.category = category;
-    }
-
-    // Expertise level filter
+    // Expertise level filter (case-insensitive)
     if (expertise) {
-      query.expertise = expertise;
+      query.expertise = new RegExp(`^${expertise}$`, 'i');
     }
 
     // Pricing type filter
     if (pricingType) {
-      query['pricing.type'] = pricingType;
+      query.teachingOption = pricingType === 'exchange' ? 'exchange' : 'paid-only';
     }
 
     // Price range filter
     if (minPrice || maxPrice) {
-      query['pricing.credits'] = {};
-      if (minPrice) query['pricing.credits'].$gte = parseInt(minPrice);
-      if (maxPrice) query['pricing.credits'].$lte = parseInt(maxPrice);
+      query.price = {};
+      if (minPrice) query.price.$gte = parseInt(minPrice);
+      if (maxPrice) query.price.$lte = parseInt(maxPrice);
     }
 
     // Sort options
@@ -64,10 +78,10 @@ router.get('/', optionalAuth, async (req, res) => {
         sort = { createdAt: -1 };
         break;
       case 'priceAsc':
-        sort = { 'pricing.credits': 1 };
+        sort = { price: 1 };
         break;
       case 'priceDesc':
-        sort = { 'pricing.credits': -1 };
+        sort = { price: -1 };
         break;
       default:
         sort = { 'stats.totalSwaps': -1 };

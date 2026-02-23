@@ -86,12 +86,6 @@ export const usersAPI = {
   getReviews: (userId: string, params?: { page?: number; limit?: number }) =>
     api.get(`/users/${userId}/reviews`, { params }),
   
-  addCredits: (amount: number, reason?: string) =>
-    api.post('/users/credits/add', { amount, reason }),
-  
-  getCreditHistory: () =>
-    api.get('/users/credits/history'),
-  
   deleteAccount: () =>
     api.delete('/users/account'),
 };
@@ -177,53 +171,6 @@ export const coursesAPI = {
     api.delete(`/courses/${id}`),
 };
 
-// Workshops API
-export const workshopsAPI = {
-  getAll: (params?: { 
-    search?: string; 
-    category?: string; 
-    type?: string; 
-    status?: string;
-    upcoming?: string;
-    sortBy?: string; 
-    page?: number; 
-    limit?: number 
-  }) => api.get('/workshops', { params }),
-  
-  getUpcoming: () =>
-    api.get('/workshops/upcoming'),
-  
-  getMyWorkshops: () =>
-    api.get('/workshops/my-workshops'),
-  
-  getHosting: () =>
-    api.get('/workshops/hosting'),
-  
-  getById: (id: string) =>
-    api.get(`/workshops/${id}`),
-  
-  create: (data: any) =>
-    api.post('/workshops', data),
-  
-  update: (id: string, data: any) =>
-    api.put(`/workshops/${id}`, data),
-  
-  register: (id: string) =>
-    api.post(`/workshops/${id}/register`),
-  
-  unregister: (id: string) =>
-    api.post(`/workshops/${id}/unregister`),
-  
-  start: (id: string) =>
-    api.post(`/workshops/${id}/start`),
-  
-  end: (id: string) =>
-    api.post(`/workshops/${id}/end`),
-  
-  delete: (id: string) =>
-    api.delete(`/workshops/${id}`),
-};
-
 // Swaps API
 export const swapsAPI = {
   getAll: (params?: { status?: string; type?: string; page?: number; limit?: number }) =>
@@ -233,12 +180,13 @@ export const swapsAPI = {
     api.get(`/swaps/${id}`),
   
   create: (data: { 
-    provider: string; 
-    skillOffered?: string; 
-    skillWanted?: string; 
+    skillId: string; 
+    type: 'exchange' | 'paid';
+    offeredSkill?: string; 
+    offeredSkillDescription?: string;
+    amount?: number;
     message: string;
     proposedSchedule?: { date: string; time: string; duration: number };
-    creditAmount?: number;
   }) => api.post('/swaps', data),
   
   accept: (id: string) =>

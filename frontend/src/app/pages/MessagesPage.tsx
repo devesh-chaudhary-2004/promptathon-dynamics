@@ -154,11 +154,19 @@ export function MessagesPage() {
       setLoadingConversations(true);
       setError(null);
       const response = await messagesAPI.getConversations();
-      setConversations(response.data.conversations || response.data || []);
+      const conversationsData = response.data.data || response.data.conversations || [];
+      
+      // Map otherParticipant to participant for frontend compatibility
+      const mappedConversations = (Array.isArray(conversationsData) ? conversationsData : []).map((conv: any) => ({
+        ...conv,
+        participant: conv.participant || conv.otherParticipant || (conv.participants?.find((p: any) => p._id !== user?._id)) || { _id: '', name: 'Unknown', avatar: '' }
+      }));
+      
+      setConversations(mappedConversations);
       
       // Select first conversation if none selected
-      if (!selectedConversation && response.data.conversations?.length > 0) {
-        setSelectedConversation(response.data.conversations[0]);
+      if (!selectedConversation && mappedConversations?.length > 0) {
+        setSelectedConversation(mappedConversations[0]);
       }
     } catch (err: any) {
       console.error("Error fetching conversations:", err);
@@ -171,8 +179,9 @@ export function MessagesPage() {
   const fetchMessages = async (conversationId: string) => {
     try {
       setLoadingMessages(true);
-      const response = await messagesAPI.getMessages(conversationId);
-      setMessages(response.data.messages || response.data || []);
+      const response = await messagesAPI.getConversation(conversationId);
+      const messagesData = response.data.data?.messages || response.data.messages || [];
+      setMessages(Array.isArray(messagesData) ? messagesData : []);
       scrollToBottom();
       
       // Mark messages as read
@@ -187,8 +196,13 @@ export function MessagesPage() {
 
   const startNewConversation = async (userId: string) => {
     try {
-      const response = await messagesAPI.startConversation(userId);
-      const newConversation = response.data.conversation || response.data;
+      const response = await messagesAPI.createConversation(userId);
+      const convData = response.data.data || response.data.conversation || response.data;
+      // Map otherParticipant to participant for frontend compatibility
+      const newConversation = {
+        ...convData,
+        participant: convData.participant || convData.otherParticipant || (convData.participants?.find((p: any) => p._id !== user?._id)) || { _id: userId, name: 'User', avatar: '' }
+      };
       setConversations((prev) => [newConversation, ...prev]);
       setSelectedConversation(newConversation);
     } catch (err: any) {
@@ -202,12 +216,12 @@ export function MessagesPage() {
 
     try {
       setSendingMessage(true);
-      const response = await messagesAPI.sendMessage(
-        selectedConversation._id,
-        messageInput.trim()
-      );
+      const response = await messagesAPI.sendMessage({
+        conversationId: selectedConversation._id,
+        content: messageInput.trim()
+      });
       
-      const newMessage = response.data.message || response.data;
+      const newMessage = response.data.data || response.data.message || response.data;
       setMessages((prev) => [...prev, newMessage]);
       setMessageInput("");
       scrollToBottom();

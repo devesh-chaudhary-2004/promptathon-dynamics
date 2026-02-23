@@ -53,18 +53,21 @@ interface Skill {
   category: string;
   level: string;
   mode: string;
-  isPremium: boolean;
+  teachingOption: 'exchange' | 'paid-only';
   price: number;
+  wantedSkillInReturn?: string;
+  sessionDuration?: number;
   location?: string;
   trending?: boolean;
+  isPremium?: boolean;
   projects?: string[];
   user: {
     _id: string;
     name: string;
     avatar?: string;
-    rating: number;
-    reviewCount: number;
-    swapCount: number;
+    rating: number | { average: number; count: number };
+    reviewCount?: number;
+    swapCount?: number;
     responseTime?: string;
     createdAt: string;
     bio?: string;
@@ -103,6 +106,8 @@ export function SkillDetailPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [selectedSkillToOffer, setSelectedSkillToOffer] = useState("");
+  const [offeredSkillDescription, setOfferedSkillDescription] = useState("");
+  const [requestType, setRequestType] = useState<'exchange' | 'paid'>('exchange');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -119,7 +124,7 @@ export function SkillDetailPage() {
       setLoading(true);
       setError(null);
       const response = await skillsAPI.getById(id);
-      setSkill(response.data.skill || response.data);
+      setSkill(response.data.data || response.data.skill || response.data);
     } catch (err: any) {
       console.error("Error fetching skill:", err);
       setError(err.response?.data?.message || "Failed to load skill details");
@@ -139,7 +144,7 @@ export function SkillDetailPage() {
 
   const handleRequestSwap = async () => {
     if (!isAuthenticated) {
-      toast.error("Please login to request a swap");
+      toast.error("Please login to request");
       navigate("/login");
       return;
     }
@@ -150,18 +155,24 @@ export function SkillDetailPage() {
       setSubmitting(true);
       await swapsAPI.create({
         skillId: skill._id,
-        recipientId: skill.user._id,
+        type: requestType,
+        offeredSkill: requestType === 'exchange' && selectedSkillToOffer ? selectedSkillToOffer : undefined,
+        offeredSkillDescription: requestType === 'exchange' && !selectedSkillToOffer ? offeredSkillDescription : undefined,
+        amount: requestType === 'paid' ? skill.price : undefined,
         message: requestMessage,
-        offeredSkillId: selectedSkillToOffer || undefined,
-        preferredDate: date?.toISOString(),
+        proposedSchedule: date ? { date: date.toISOString(), time: '10:00', duration: skill.sessionDuration || 60 } : undefined,
       });
-      toast.success("Swap request sent! You'll receive a response within 24 hours.");
+      toast.success(requestType === 'exchange' 
+        ? "Exchange request sent! You'll receive a response soon." 
+        : "Learning request sent! You'll receive a response soon."
+      );
       setIsDialogOpen(false);
       setRequestMessage("");
       setSelectedSkillToOffer("");
+      setOfferedSkillDescription("");
     } catch (err: any) {
-      console.error("Error sending swap request:", err);
-      toast.error(err.response?.data?.message || "Failed to send swap request");
+      console.error("Error sending request:", err);
+      toast.error(err.response?.data?.message || "Failed to send request");
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +206,7 @@ export function SkillDetailPage() {
     return `${Math.floor(days / 365)} years ago`;
   };
 
-  const isOwnSkill = skill && user && skill.user._id === user._id;
+  const isOwnSkill = skill && user && skill.user?._id === user._id;
 
   // Loading state
   if (loading) {
@@ -225,7 +236,7 @@ export function SkillDetailPage() {
   }
 
   // Error state
-  if (error || !skill) {
+  if (error || !skill || !skill.user) {
     return (
       <div className="min-h-screen px-4 py-8">
         <div className="container mx-auto max-w-7xl">
@@ -390,7 +401,7 @@ export function SkillDetailPage() {
                     <CardContent className="p-6">
                       <div className="mb-6 flex items-center gap-4">
                         <div className="text-5xl font-bold text-white">
-                          {skill.user.rating?.toFixed(1) || "N/A"}
+                          {(typeof skill.user.rating === 'number' ? skill.user.rating : skill.user.rating?.average)?.toFixed(1) || "N/A"}
                         </div>
                         <div>
                           <div className="mb-1 flex items-center gap-1">
@@ -398,7 +409,7 @@ export function SkillDetailPage() {
                               <Star
                                 key={i}
                                 className={`h-5 w-5 ${
-                                  i < Math.floor(skill.user.rating || 0)
+                                  i < Math.floor(typeof skill.user.rating === 'number' ? skill.user.rating : (skill.user.rating?.average || 0))
                                     ? "fill-yellow-400 text-yellow-400"
                                     : "text-gray-600"
                                 }`}
@@ -406,7 +417,7 @@ export function SkillDetailPage() {
                             ))}
                           </div>
                           <p className="text-sm text-gray-400">
-                            Based on {skill.user.reviewCount || 0} reviews
+                            Based on {skill.user.reviewCount || skill.user.rating?.count || 0} reviews
                           </p>
                         </div>
                       </div>
@@ -480,8 +491,8 @@ export function SkillDetailPage() {
                       </Link>
                       <div className="flex items-center gap-1 text-sm text-gray-400">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-white">{skill.user.rating?.toFixed(1) || "N/A"}</span>
-                        <span>({skill.user.reviewCount || 0})</span>
+                        <span className="text-white">{(typeof skill.user.rating === 'number' ? skill.user.rating : skill.user.rating?.average)?.toFixed(1) || "N/A"}</span>
+                        <span>({skill.user.reviewCount || skill.user.rating?.count || 0})</span>
                       </div>
                     </div>
                   </div>
@@ -557,7 +568,7 @@ export function SkillDetailPage() {
                   {isOwnSkill ? (
                     <div className="text-center">
                       <p className="text-sm text-gray-400 mb-3">This is your skill</p>
-                      <Link to={`/skills/edit/${skill._id}`}>
+                      <Link to={`/edit-skill/${skill._id}`}>
                         <Button className="w-full bg-white/10 text-white hover:bg-white/20">
                           Edit Skill
                         </Button>
@@ -570,48 +581,133 @@ export function SkillDetailPage() {
                           size="lg"
                           className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"
                         >
-                          Request Swap
+                          Request to Learn
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="border-white/10 bg-[#0a0a0a] text-white max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="border-white/10 bg-[#0a0a0a] text-white max-h-[90vh] overflow-y-auto sm:max-w-lg">
                         <DialogHeader>
-                          <DialogTitle>Request Skill Swap</DialogTitle>
+                          <DialogTitle>Request to Learn: {skill.title}</DialogTitle>
                           <DialogDescription className="text-gray-400">
-                            Send a swap request to {skill.user.name}
+                            Choose how you'd like to learn from {skill.user.name}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
+                          {/* Request Type Selection */}
+                          <div className="space-y-3">
+                            <Label className="text-white">How would you like to learn?</Label>
+                            
+                            {/* Exchange Option - Only show if skill allows exchange */}
+                            {skill.teachingOption === 'exchange' && (
+                              <div 
+                                onClick={() => setRequestType('exchange')}
+                                className={`cursor-pointer rounded-lg border p-3 transition-all ${
+                                  requestType === 'exchange' 
+                                    ? 'border-teal-500 bg-teal-500/10' 
+                                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                                    requestType === 'exchange' ? 'border-teal-500' : 'border-gray-500'
+                                  }`}>
+                                    {requestType === 'exchange' && (
+                                      <div className="h-2 w-2 rounded-full bg-teal-500" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="font-semibold text-white">Exchange Skills</span>
+                                    <p className="text-xs text-gray-400">
+                                      Offer your skill in exchange for learning
+                                      {skill.wantedSkillInReturn && (
+                                        <span className="block text-teal-400 mt-1">
+                                          They want to learn: {skill.wantedSkillInReturn}
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Paid Option */}
+                            <div 
+                              onClick={() => setRequestType('paid')}
+                              className={`cursor-pointer rounded-lg border p-3 transition-all ${
+                                requestType === 'paid' 
+                                  ? 'border-yellow-500 bg-yellow-500/10' 
+                                  : 'border-white/10 bg-white/5 hover:border-white/20'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                                  requestType === 'paid' ? 'border-yellow-500' : 'border-gray-500'
+                                }`}>
+                                  {requestType === 'paid' && (
+                                    <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-white">Pay to Learn</span>
+                                    {skill.price > 0 && (
+                                      <span className="text-yellow-400 font-semibold">₹{skill.price}</span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400">Pay for the session without exchanging skills</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Exchange-specific fields */}
+                          {requestType === 'exchange' && (
+                            <div className="space-y-3 p-3 rounded-lg border border-teal-500/20 bg-teal-500/5">
+                              {userSkills.length > 0 && (
+                                <div className="space-y-2">
+                                  <Label className="text-gray-300">Select your skill to offer</Label>
+                                  <Select
+                                    value={selectedSkillToOffer}
+                                    onValueChange={setSelectedSkillToOffer}
+                                  >
+                                    <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                                      <SelectValue placeholder="Select a skill to offer" />
+                                    </SelectTrigger>
+                                    <SelectContent className="border-white/10 bg-[#0a0a0a]">
+                                      {userSkills.map((s) => (
+                                        <SelectItem key={s._id} value={s._id}>
+                                          {s.title} ({s.category})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                              
+                              <div className="space-y-2">
+                                <Label className="text-gray-300">
+                                  {userSkills.length > 0 ? "Or describe a skill you can teach" : "Describe what skill you can teach in exchange"}
+                                </Label>
+                                <Textarea
+                                  placeholder="e.g., I can teach you Python basics, guitar chords, or video editing..."
+                                  className="border-white/10 bg-white/5 text-white"
+                                  rows={2}
+                                  value={offeredSkillDescription}
+                                  onChange={(e) => setOfferedSkillDescription(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          )}
+
                           <div className="space-y-2">
                             <Label>Your Message</Label>
                             <Textarea
                               placeholder="Introduce yourself and explain what you'd like to learn..."
                               className="border-white/10 bg-white/5 text-white"
-                              rows={4}
+                              rows={3}
                               value={requestMessage}
                               onChange={(e) => setRequestMessage(e.target.value)}
                             />
                           </div>
-                          
-                          {userSkills.length > 0 && (
-                            <div className="space-y-2">
-                              <Label>Skill You'll Offer (Optional)</Label>
-                              <Select
-                                value={selectedSkillToOffer}
-                                onValueChange={setSelectedSkillToOffer}
-                              >
-                                <SelectTrigger className="border-white/10 bg-white/5 text-white">
-                                  <SelectValue placeholder="Select a skill to offer" />
-                                </SelectTrigger>
-                                <SelectContent className="border-white/10 bg-[#0a0a0a]">
-                                  {userSkills.map((s) => (
-                                    <SelectItem key={s._id} value={s._id}>
-                                      {s.title} ({s.category})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
 
                           <div className="space-y-2">
                             <Label>Preferred Start Date</Label>
@@ -626,7 +722,7 @@ export function SkillDetailPage() {
                           
                           <Button
                             onClick={handleRequestSwap}
-                            disabled={submitting}
+                            disabled={submitting || (requestType === 'exchange' && !selectedSkillToOffer && !offeredSkillDescription.trim())}
                             className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
                           >
                             {submitting ? (
@@ -634,8 +730,10 @@ export function SkillDetailPage() {
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Sending...
                               </>
+                            ) : requestType === 'exchange' ? (
+                              "Send Exchange Request"
                             ) : (
-                              "Send Request"
+                              `Send Request${skill.price > 0 ? ` (₹${skill.price})` : ''}`
                             )}
                           </Button>
                         </div>

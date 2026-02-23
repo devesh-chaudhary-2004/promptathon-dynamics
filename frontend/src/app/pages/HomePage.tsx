@@ -6,13 +6,6 @@ import { Badge } from "@/app/components/ui/badge";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { 
   Search, 
-  Code, 
-  Palette, 
-  Music, 
-  PenTool, 
-  Rocket, 
-  FlaskConical,
-  Database,
   Zap,
   TrendingUp,
   Users,
@@ -24,39 +17,16 @@ import {
   BookOpen,
   GraduationCap,
   Trophy,
-  Briefcase,
-  Globe,
   CheckCircle,
-  Video,
-  Calendar,
   Crown,
   Flame,
   ArrowUpRight,
-  Cpu,
-  CloudLightning,
   RefreshCw,
   AlertCircle
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
-import { skillsAPI, workshopsAPI } from "@/lib/api";
-
-// Category icons mapping
-const categoryIcons: Record<string, React.ElementType> = {
-  development: Code,
-  design: Palette,
-  music: Music,
-  writing: PenTool,
-  science: FlaskConical,
-  dsa: Database,
-  "data-science": Database,
-  marketing: TrendingUp,
-  "ai-ml": Cpu,
-  cloud: CloudLightning,
-  business: Briefcase,
-  languages: Globe,
-  other: Rocket,
-};
+import { skillsAPI } from "@/lib/api";
 
 const categoryColors: Record<string, string> = {
   development: "from-teal-500 to-cyan-500",
@@ -181,34 +151,15 @@ interface Skill {
   };
 }
 
-interface Workshop {
-  _id: string;
-  title: string;
-  category: string;
-  scheduledDate: string;
-  startTime: string;
-  duration: number;
-  price: number;
-  isFree: boolean;
-  stats: { registrations: number };
-  host: {
-    _id: string;
-    name: string;
-  };
-}
-
 interface Stats {
   totalUsers?: number;
   totalSkills?: number;
   totalSwaps?: number;
-  totalWorkshops?: number;
 }
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [featuredSkills, setFeaturedSkills] = useState<Skill[]>([]);
-  const [upcomingWorkshops, setUpcomingWorkshops] = useState<Workshop[]>([]);
-  const [categories, setCategories] = useState<{ _id: string; count: number }[]>([]);
   const [stats, setStats] = useState<Stats>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,15 +173,12 @@ export function HomePage() {
     setLoading(true);
     setError(null);
     try {
-      const [skillsRes, workshopsRes, categoriesRes] = await Promise.all([
+      const [skillsRes, categoriesRes] = await Promise.all([
         skillsAPI.getFeatured().catch(() => ({ data: { skills: [] } })),
-        workshopsAPI.getUpcoming().catch(() => ({ data: { workshops: [] } })),
         skillsAPI.getCategories().catch(() => ({ data: { categories: [] } })),
       ]);
 
       setFeaturedSkills(skillsRes.data.skills || []);
-      setUpcomingWorkshops(workshopsRes.data.workshops || []);
-      setCategories(categoriesRes.data.categories || []);
       
       // Calculate stats from fetched data
       const totalSkills = categoriesRes.data.categories?.reduce((acc: number, cat: { count: number }) => acc + cat.count, 0) || 0;
@@ -238,7 +186,6 @@ export function HomePage() {
         totalUsers: 50000 + totalSkills * 10,
         totalSkills: totalSkills || 5000,
         totalSwaps: 125000 + totalSkills * 25,
-        totalWorkshops: workshopsRes.data.workshops?.length || 100,
       });
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -259,26 +206,8 @@ export function HomePage() {
     { label: "Active Students", value: stats.totalUsers ? `${Math.floor(stats.totalUsers / 1000)}K+` : "50K+", icon: Users, color: "from-teal-500 to-cyan-500" },
     { label: "Skills Available", value: stats.totalSkills ? `${stats.totalSkills}+` : "5K+", icon: Zap, color: "from-teal-400 to-emerald-500" },
     { label: "Success Rate", value: "98%", icon: Award, color: "from-emerald-500 to-teal-500" },
-    { label: "Workshops", value: stats.totalWorkshops ? `${stats.totalWorkshops}+` : "100+", icon: Crown, color: "from-cyan-500 to-teal-400" },
+    { label: "Exchanges", value: "10K+", icon: Crown, color: "from-cyan-500 to-teal-400" },
   ];
-
-  // Default categories if API returns empty
-  const defaultCategories = [
-    { _id: "development", count: 1247 },
-    { _id: "design", count: 892 },
-    { _id: "music", count: 634 },
-    { _id: "writing", count: 521 },
-    { _id: "science", count: 445 },
-    { _id: "dsa", count: 789 },
-    { _id: "ai-ml", count: 567 },
-    { _id: "cloud", count: 423 },
-    { _id: "business", count: 312 },
-    { _id: "languages", count: 478 },
-    { _id: "marketing", count: 298 },
-    { _id: "other", count: 356 },
-  ];
-
-  const displayCategories = categories.length > 0 ? categories : defaultCategories;
 
   return (
     <div className="min-h-screen overflow-hidden">
@@ -414,65 +343,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <Badge className="mb-4 bg-teal-500/10 text-teal-400 border-teal-500/20">
-              <Flame className="mr-2 h-4 w-4" />
-              Explore Categories
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
-              Learn Anything You Want
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              From coding to creativity, find the perfect skill to master
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {loading ? (
-              [...Array(12)].map((_, i) => (
-                <Skeleton key={i} className="h-32 rounded-2xl bg-white/5" />
-              ))
-            ) : (
-              displayCategories.map((category, index) => {
-                const Icon = categoryIcons[category._id] || Rocket;
-                const color = categoryColors[category._id] || "from-teal-500 to-cyan-500";
-                return (
-                  <motion.div
-                    key={category._id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link to={`/skills?category=${category._id}`}>
-                      <Card className="border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 group cursor-pointer h-full">
-                        <CardContent className="p-6 text-center">
-                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${color} mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
-                            <Icon className="h-6 w-6 text-white" />
-                          </div>
-                          <h3 className="font-heading font-semibold text-white capitalize mb-1">
-                            {category._id.replace("-", " ")}
-                          </h3>
-                          <p className="text-sm text-gray-400">{category.count} skills</p>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </section>
-
       {/* Featured Skills Section */}
       <section className="py-20 px-4 bg-gradient-to-b from-transparent via-teal-500/5 to-transparent">
         <div className="container mx-auto">
@@ -595,106 +465,6 @@ export function HomePage() {
                 <Link to="/add-skill">
                   <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 gap-2">
                     Add Your Skill
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Upcoming Workshops Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center justify-between mb-12"
-          >
-            <div>
-              <Badge className="mb-4 bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
-                <Video className="mr-2 h-4 w-4" />
-                Live Workshops
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold font-heading text-white">
-                Upcoming Sessions
-              </h2>
-            </div>
-            <Link to="/workshops">
-              <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 gap-2">
-                View All
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loading ? (
-              [...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-48 rounded-2xl bg-white/5" />
-              ))
-            ) : upcomingWorkshops.length > 0 ? (
-              upcomingWorkshops.slice(0, 3).map((workshop, index) => (
-                <motion.div
-                  key={workshop._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Link to={`/workshops/${workshop._id}`}>
-                    <Card className="border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 group cursor-pointer">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <Badge className="bg-white/10 text-white capitalize">
-                            {workshop.category?.replace("-", " ") || "General"}
-                          </Badge>
-                          {workshop.isFree ? (
-                            <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-                              Free
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-                              {workshop.price} credits
-                            </Badge>
-                          )}
-                        </div>
-
-                        <h3 className="text-lg font-heading font-semibold text-white mb-3 group-hover:text-cyan-400 transition-colors">
-                          {workshop.title}
-                        </h3>
-
-                        <p className="text-sm text-gray-400 mb-4">
-                          By {workshop.host?.name || "TBA"}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {new Date(workshop.scheduledDate).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {workshop.startTime}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {workshop.stats?.registrations || 0}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-12">
-                <p className="text-gray-400 mb-4">No upcoming workshops scheduled yet.</p>
-                <Link to="/workshops">
-                  <Button variant="outline" className="gap-2">
-                    Browse Workshops
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>

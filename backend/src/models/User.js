@@ -75,12 +75,6 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Skill',
   }],
-  // Credits system
-  credits: {
-    type: Number,
-    default: 100, // Starting credits
-    min: 0,
-  },
   // User stats
   stats: {
     totalSwaps: { type: Number, default: 0 },

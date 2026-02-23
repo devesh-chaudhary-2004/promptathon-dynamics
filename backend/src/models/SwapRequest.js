@@ -19,19 +19,24 @@ const swapRequestSchema = new mongoose.Schema({
     ref: 'Skill',
     required: true,
   },
-  // Skill offered in exchange (optional - for swap mode)
+  // Skill offered in exchange (optional - for exchange mode)
   offeredSkill: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Skill',
   },
-  // Request type
+  // Description of skill offered in exchange (for exchange type when requester doesn't have a listed skill)
+  offeredSkillDescription: {
+    type: String,
+    maxLength: [500, 'Offered skill description cannot exceed 500 characters'],
+  },
+  // Request type - exchange skills or pay money
   type: {
     type: String,
-    enum: ['swap', 'credits', 'free'],
-    default: 'credits',
+    enum: ['exchange', 'paid'],
+    default: 'exchange',
   },
-  // Credits offered (if type is credits)
-  creditsOffered: {
+  // Amount to be paid (if type is paid) in currency
+  amount: {
     type: Number,
     default: 0,
     min: 0,

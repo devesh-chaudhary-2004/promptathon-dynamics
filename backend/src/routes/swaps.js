@@ -105,74 +105,128 @@ router.get('/:id', authenticate, async (req, res) => {
 // @access  Private
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { provider, skillOffered, skillWanted, message, proposedSchedule, creditAmount } = req.body;
+    const { 
+      skillId, 
+      type, // 'exchange' or 'paid'
+      offeredSkill, // Skill ID if exchanging
+      offeredSkillDescription, // Text description of skill to exchange
+      amount, // Amount if paid
+      message, 
+      proposedSchedule 
+    } = req.body;
 
-    // Can't swap with yourself
+    // Get the skill to find the provider
+    const Skill = (await import('../models/Skill.js')).default;
+    const skill = await Skill.findById(skillId);
+
+    if (!skill) {
+      return res.status(404).json({
+        success: false,
+        message: 'Skill not found.',
+      });
+    }
+
+    const provider = skill.user.toString();
+
+    // Can't request your own skill
     if (provider === req.userId.toString()) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot create a swap request with yourself.',
+        message: 'Cannot request your own skill.',
       });
     }
 
     // Check for existing pending request
     const existingRequest = await SwapRequest.findOne({
       requester: req.userId,
-      provider,
-      status: { $in: ['pending', 'accepted', 'in_progress'] },
+      skill: skillId,
+      status: { $in: ['pending', 'accepted', 'in-progress'] },
     });
 
     if (existingRequest) {
       return res.status(400).json({
         success: false,
-        message: 'You already have an active swap request with this user.',
+        message: 'You already have an active request for this skill.',
       });
+    }
+
+    // Format proposedSchedule - handle both object and array formats
+    let formattedSchedule = [];
+    if (proposedSchedule) {
+      if (Array.isArray(proposedSchedule)) {
+        formattedSchedule = proposedSchedule;
+      } else {
+        // Convert frontend format { date, time, duration } to model format
+        const scheduleDate = new Date(proposedSchedule.date);
+        const startTime = proposedSchedule.time || '10:00';
+        const duration = proposedSchedule.duration || 60;
+        
+        // Calculate end time
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const endDate = new Date(scheduleDate);
+        endDate.setHours(hours, minutes + duration);
+        const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+        
+        formattedSchedule = [{
+          date: scheduleDate,
+          startTime,
+          endTime,
+        }];
+      }
     }
 
     const swap = await SwapRequest.create({
       requester: req.userId,
       provider,
-      skillOffered,
-      skillWanted,
+      skill: skillId,
+      type: type || 'exchange',
+      offeredSkill: type === 'exchange' ? offeredSkill : undefined,
+      offeredSkillDescription: type === 'exchange' ? offeredSkillDescription : undefined,
+      amount: type === 'paid' ? (amount || skill.price || 0) : 0,
       message,
-      proposedSchedule,
-      credits: {
-        amount: creditAmount || 0,
-        paidBy: creditAmount > 0 ? req.userId : null,
-      },
+      proposedSchedule: formattedSchedule.length > 0 ? formattedSchedule : undefined,
     });
 
     const populatedSwap = await SwapRequest.findById(swap._id)
       .populate('requester', 'name avatar')
       .populate('provider', 'name avatar')
-      .populate('skillOffered', 'title')
-      .populate('skillWanted', 'title');
+      .populate('skill', 'title category')
+      .populate('offeredSkill', 'title category');
 
-    // Create notification for provider
-    const Notification = (await import('../models/Notification.js')).default;
-    const User = (await import('../models/User.js')).default;
-    const requester = await User.findById(req.userId);
+    // Create notification for provider (wrapped in try-catch to not fail the request)
+    try {
+      const Notification = (await import('../models/Notification.js')).default;
+      const User = (await import('../models/User.js')).default;
+      const requester = await User.findById(req.userId);
 
-    await Notification.createNotification({
-      user: provider,
-      type: 'swap_request',
-      title: 'New Swap Request',
-      message: `${requester.name} wants to swap skills with you`,
-      relatedUser: req.userId,
-      relatedSwap: swap._id,
-      actionUrl: `/swaps/${swap._id}`,
-    });
+      if (requester && Notification.createNotification) {
+        await Notification.createNotification({
+          user: provider,
+          type: 'swap_request',
+          title: type === 'exchange' ? 'New Skill Exchange Request' : 'New Learning Request',
+          message: type === 'exchange' 
+            ? `${requester.name} wants to exchange skills with you`
+            : `${requester.name} wants to learn ${skill.title} from you`,
+          relatedUser: req.userId,
+          relatedSwap: swap._id,
+          actionUrl: `/swaps/${swap._id}`,
+        });
+      }
+    } catch (notifError) {
+      console.error('Notification creation failed (non-critical):', notifError);
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Swap request sent successfully.',
+      message: 'Request sent successfully.',
       data: populatedSwap,
     });
   } catch (error) {
     console.error('Create swap error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Error creating swap request.',
+      message: error.message || 'Error creating request.',
     });
   }
 });
@@ -401,24 +455,11 @@ router.put('/:id/complete', authenticate, async (req, res) => {
     // Update user stats
     const User = (await import('../models/User.js')).default;
     await User.findByIdAndUpdate(swap.requester, {
-      $inc: { 'stats.totalSwaps': 1, 'stats.skillsLearned': 1 },
+      $inc: { 'stats.totalSwaps': 1, 'stats.totalLearning': 1 },
     });
     await User.findByIdAndUpdate(swap.provider, {
-      $inc: { 'stats.totalSwaps': 1, 'stats.skillsTaught': 1 },
+      $inc: { 'stats.totalSwaps': 1, 'stats.totalTeaching': 1 },
     });
-
-    // Handle credit transfer
-    if (swap.credits.amount > 0 && swap.credits.paidBy) {
-      await User.findByIdAndUpdate(swap.credits.paidBy, {
-        $inc: { credits: -swap.credits.amount },
-      });
-      const recipient = swap.credits.paidBy.toString() === swap.requester.toString()
-        ? swap.provider
-        : swap.requester;
-      await User.findByIdAndUpdate(recipient, {
-        $inc: { credits: swap.credits.amount },
-      });
-    }
 
     // Create notifications
     const Notification = (await import('../models/Notification.js')).default;
